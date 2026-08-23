@@ -55,6 +55,8 @@ public class MainActivity extends Activity implements SurfaceHolder.Callback {
     private Button settingsButton;
     private Button qualitySettingButton;
     private Button bitrateSettingButton;
+    private Button fpsSettingButton;
+    private Button stabilizationSettingButton;
     private FrameLayout settingsPanel;
 
     private Camera camera;
@@ -71,7 +73,9 @@ public class MainActivity extends Activity implements SurfaceHolder.Callback {
     private int zoomValue = 0;
     private int exposureValue = 0;
     private int videoQualityMode = 0;
+    private int fpsMode = 0;
     private boolean boostedBitrate = false;
+    private boolean videoStabilizationEnabled = true;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -176,7 +180,7 @@ public class MainActivity extends Activity implements SurfaceHolder.Callback {
         ));
 
         FrameLayout controls = new FrameLayout(this);
-        controls.setPadding(dp(8), dp(7), dp(8), dp(7));
+        controls.setPadding(dp(8), dp(6), dp(8), dp(6));
         controls.setBackground(makeCapsuleBackground());
         controls.setElevation(dp(16));
         controls.setTranslationZ(dp(10));
@@ -232,7 +236,7 @@ public class MainActivity extends Activity implements SurfaceHolder.Callback {
 
         FrameLayout.LayoutParams controlsParams = new FrameLayout.LayoutParams(
                 FrameLayout.LayoutParams.MATCH_PARENT,
-                dp(62),
+                dp(58),
                 Gravity.BOTTOM | Gravity.CENTER_HORIZONTAL
         );
         controlsParams.leftMargin = dp(18);
@@ -314,9 +318,13 @@ public class MainActivity extends Activity implements SurfaceHolder.Callback {
 
         qualitySettingButton = settingsOptionButton("", this::cycleVideoQuality);
         bitrateSettingButton = settingsOptionButton("", this::toggleBoostedBitrate);
+        fpsSettingButton = settingsOptionButton("", this::cycleFpsMode);
+        stabilizationSettingButton = settingsOptionButton("", this::toggleVideoStabilization);
         Button closeButton = settingsOptionButton("FECHAR", this::closeVideoSettings);
         card.addView(qualitySettingButton);
         card.addView(bitrateSettingButton);
+        card.addView(fpsSettingButton);
+        card.addView(stabilizationSettingButton);
         card.addView(closeButton);
         updateVideoSettingsLabels();
 
@@ -371,9 +379,21 @@ public class MainActivity extends Activity implements SurfaceHolder.Callback {
         updateVideoSettingsLabels();
     }
 
+    private void cycleFpsMode() {
+        fpsMode = (fpsMode + 1) % 3;
+        updateVideoSettingsLabels();
+    }
+
+    private void toggleVideoStabilization() {
+        videoStabilizationEnabled = !videoStabilizationEnabled;
+        updateVideoSettingsLabels();
+    }
+
     private void updateVideoSettingsLabels() {
         if (qualitySettingButton != null) qualitySettingButton.setText("Qualidade: " + videoQualityLabel());
         if (bitrateSettingButton != null) bitrateSettingButton.setText("Bitrate: " + (boostedBitrate ? "REFORÇADO" : "NORMAL"));
+        if (fpsSettingButton != null) fpsSettingButton.setText("FPS: " + fpsLabel());
+        if (stabilizationSettingButton != null) stabilizationSettingButton.setText("Estabilização: " + (videoStabilizationEnabled ? "ON" : "OFF"));
     }
 
     private String videoQualityLabel() {
@@ -382,6 +402,22 @@ public class MainActivity extends Activity implements SurfaceHolder.Callback {
             case 2: return "Full HD 1080p";
             case 3: return "HD 720p";
             default: return "Automática máxima";
+        }
+    }
+
+    private String fpsLabel() {
+        switch (fpsMode) {
+            case 1: return "30";
+            case 2: return "60 se suportado";
+            default: return "Automático";
+        }
+    }
+
+    private int selectedFps() {
+        switch (fpsMode) {
+            case 1: return 30;
+            case 2: return 60;
+            default: return 0;
         }
     }
 
@@ -398,22 +434,22 @@ public class MainActivity extends Activity implements SurfaceHolder.Callback {
     private GradientDrawable makeCapsuleBackground() {
         GradientDrawable drawable = new GradientDrawable(
                 GradientDrawable.Orientation.TOP_BOTTOM,
-                new int[]{0x882F3842, 0x66101820}
+                new int[]{0x7039434C, 0x55101820}
         );
-        drawable.setCornerRadius(dp(38));
-        drawable.setStroke(dp(1), 0x77FFFFFF);
+        drawable.setCornerRadius(dp(27));
+        drawable.setStroke(dp(1), 0x26FFFFFF);
         return drawable;
     }
 
     private GradientDrawable makeButtonBackground(boolean selected) {
-        int top = selected ? 0xAA2E8CFF : 0x553A4652;
-        int bottom = selected ? 0xAA0051B8 : 0x44202B35;
+        int top = selected ? 0xDD2E8CFF : 0x443A4652;
+        int bottom = selected ? 0xCC004EA8 : 0x33202B35;
         GradientDrawable drawable = new GradientDrawable(
                 GradientDrawable.Orientation.TOP_BOTTOM,
                 new int[]{top, bottom}
         );
-        drawable.setCornerRadius(dp(22));
-        drawable.setStroke(dp(1), selected ? 0xBBFFFFFF : 0x55FFFFFF);
+        drawable.setCornerRadius(dp(18));
+        drawable.setStroke(dp(1), selected ? 0x66FFFFFF : 0x22FFFFFF);
         return drawable;
     }
 
@@ -422,8 +458,8 @@ public class MainActivity extends Activity implements SurfaceHolder.Callback {
                 GradientDrawable.Orientation.TOP_BOTTOM,
                 new int[]{0xEEFF4B4B, 0xEEB00020}
         );
-        drawable.setCornerRadius(dp(22));
-        drawable.setStroke(dp(1), 0xCCFFFFFF);
+        drawable.setCornerRadius(dp(18));
+        drawable.setStroke(dp(1), 0x77FFFFFF);
         return drawable;
     }
 
@@ -491,6 +527,10 @@ public class MainActivity extends Activity implements SurfaceHolder.Callback {
             if (minExposure != 0 || maxExposure != 0) {
                 exposureValue = Math.max(minExposure, Math.min(maxExposure, exposureValue));
                 parameters.setExposureCompensation(exposureValue);
+            }
+
+            if (videoMode && parameters.isVideoStabilizationSupported()) {
+                parameters.setVideoStabilization(videoStabilizationEnabled);
             }
 
             List<String> flashModes = parameters.getSupportedFlashModes();
@@ -563,6 +603,10 @@ public class MainActivity extends Activity implements SurfaceHolder.Callback {
             if (boostedBitrate) {
                 int boosted = Math.min(profile.videoBitRate + 12000000, Math.max(profile.videoBitRate, profile.videoBitRate * 3 / 2));
                 mediaRecorder.setVideoEncodingBitRate(boosted);
+            }
+            int fps = selectedFps();
+            if (fps > 0) {
+                mediaRecorder.setVideoFrameRate(fps);
             }
             mediaRecorder.setOrientationHint(isFrontCamera(cameraId) ? 270 : 90);
 
