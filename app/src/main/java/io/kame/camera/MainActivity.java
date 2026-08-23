@@ -427,29 +427,29 @@ public class MainActivity extends Activity implements SurfaceHolder.Callback {
                 new int[]{0xDD2F3842, 0xEE101820}
         );
         drawable.setCornerRadius(dp(28));
-        drawable.setStroke(dp(1), 0x88FFFFFF);
+        drawable.setStroke(dp(1), 0x26FFFFFF);
         return drawable;
     }
 
     private GradientDrawable makeCapsuleBackground() {
         GradientDrawable drawable = new GradientDrawable(
                 GradientDrawable.Orientation.TOP_BOTTOM,
-                new int[]{0x7039434C, 0x55101820}
+                new int[]{0x5A3B434A, 0x44101820}
         );
-        drawable.setCornerRadius(dp(27));
-        drawable.setStroke(dp(1), 0x26FFFFFF);
+        drawable.setCornerRadius(dp(26));
+        drawable.setStroke(dp(1), 0x10FFFFFF);
         return drawable;
     }
 
     private GradientDrawable makeButtonBackground(boolean selected) {
-        int top = selected ? 0xDD2E8CFF : 0x443A4652;
-        int bottom = selected ? 0xCC004EA8 : 0x33202B35;
+        int top = selected ? 0xEE2A7DE6 : 0x333A4652;
+        int bottom = selected ? 0xDD003D8F : 0x24101820;
         GradientDrawable drawable = new GradientDrawable(
                 GradientDrawable.Orientation.TOP_BOTTOM,
                 new int[]{top, bottom}
         );
         drawable.setCornerRadius(dp(18));
-        drawable.setStroke(dp(1), selected ? 0x66FFFFFF : 0x22FFFFFF);
+        drawable.setStroke(dp(1), selected ? 0x663D9DFF : 0x08FFFFFF);
         return drawable;
     }
 
@@ -459,7 +459,7 @@ public class MainActivity extends Activity implements SurfaceHolder.Callback {
                 new int[]{0xEEFF4B4B, 0xEEB00020}
         );
         drawable.setCornerRadius(dp(18));
-        drawable.setStroke(dp(1), 0x77FFFFFF);
+        drawable.setStroke(dp(1), 0x66FF6B6B);
         return drawable;
     }
 
