@@ -169,13 +169,11 @@ public class MainActivity extends Activity implements SurfaceHolder.Callback {
                 Gravity.TOP
         ));
 
-        LinearLayout controls = new LinearLayout(this);
-        controls.setOrientation(LinearLayout.VERTICAL);
-        controls.setGravity(Gravity.CENTER);
-        controls.setPadding(dp(10), dp(10), dp(10), dp(10));
+        FrameLayout controls = new FrameLayout(this);
+        controls.setPadding(dp(8), dp(7), dp(8), dp(7));
         controls.setBackground(makeCapsuleBackground());
-        controls.setElevation(dp(14));
-        controls.setTranslationZ(dp(8));
+        controls.setElevation(dp(16));
+        controls.setTranslationZ(dp(10));
 
         HorizontalScrollView scrollView = new HorizontalScrollView(this);
         scrollView.setHorizontalScrollBarEnabled(false);
@@ -183,7 +181,7 @@ public class MainActivity extends Activity implements SurfaceHolder.Callback {
         LinearLayout actionsRow = new LinearLayout(this);
         actionsRow.setOrientation(LinearLayout.HORIZONTAL);
         actionsRow.setGravity(Gravity.CENTER_VERTICAL);
-        actionsRow.setPadding(dp(4), 0, dp(4), 0);
+        actionsRow.setPadding(dp(8), 0, dp(8), 0);
 
         photoModeButton = capsuleActionButton("FOTO", () -> setVideoMode(false));
         videoModeButton = capsuleActionButton("VÍDEO", () -> setVideoMode(true));
@@ -198,6 +196,7 @@ public class MainActivity extends Activity implements SurfaceHolder.Callback {
         actionsRow.addView(photoModeButton);
         actionsRow.addView(videoModeButton);
         actionsRow.addView(switchButton);
+        actionsRow.addView(centerSpacer());
         actionsRow.addView(flashButton);
         actionsRow.addView(zoomOutButton);
         actionsRow.addView(zoomInButton);
@@ -209,17 +208,22 @@ public class MainActivity extends Activity implements SurfaceHolder.Callback {
                 HorizontalScrollView.LayoutParams.WRAP_CONTENT
         ));
 
+        FrameLayout.LayoutParams scrollParams = new FrameLayout.LayoutParams(
+                FrameLayout.LayoutParams.MATCH_PARENT,
+                FrameLayout.LayoutParams.WRAP_CONTENT,
+                Gravity.CENTER
+        );
+        controls.addView(scrollView, scrollParams);
+
         shutterButton = new Button(this);
         shutterButton.setText("●");
-        shutterButton.setTextSize(36f);
+        shutterButton.setTextSize(30f);
         shutterButton.setTextColor(0xFFE53935);
         shutterButton.setTypeface(Typeface.DEFAULT_BOLD);
         shutterButton.setBackground(makeShutterBackground());
-        shutterButton.setElevation(dp(10));
-        shutterButton.setTranslationZ(dp(6));
-        LinearLayout.LayoutParams shutterParams = new LinearLayout.LayoutParams(dp(74), dp(74));
-        shutterParams.topMargin = dp(8);
-        shutterParams.gravity = Gravity.CENTER_HORIZONTAL;
+        shutterButton.setElevation(dp(12));
+        shutterButton.setTranslationZ(dp(8));
+        FrameLayout.LayoutParams shutterParams = new FrameLayout.LayoutParams(dp(58), dp(58), Gravity.CENTER);
         shutterButton.setLayoutParams(shutterParams);
         shutterButton.setOnClickListener(view -> handleShutterClick());
         shutterButton.setOnLongClickListener(view -> {
@@ -227,22 +231,17 @@ public class MainActivity extends Activity implements SurfaceHolder.Callback {
             toggleVideo();
             return true;
         });
-
-        controls.addView(scrollView, new LinearLayout.LayoutParams(
-                LinearLayout.LayoutParams.MATCH_PARENT,
-                LinearLayout.LayoutParams.WRAP_CONTENT
-        ));
         controls.addView(shutterButton);
         setVideoMode(false);
 
         FrameLayout.LayoutParams controlsParams = new FrameLayout.LayoutParams(
                 FrameLayout.LayoutParams.MATCH_PARENT,
-                FrameLayout.LayoutParams.WRAP_CONTENT,
+                dp(76),
                 Gravity.BOTTOM | Gravity.CENTER_HORIZONTAL
         );
-        controlsParams.leftMargin = dp(10);
-        controlsParams.rightMargin = dp(10);
-        controlsParams.bottomMargin = dp(8);
+        controlsParams.leftMargin = dp(18);
+        controlsParams.rightMargin = dp(18);
+        controlsParams.bottomMargin = dp(12);
         root.addView(controls, controlsParams);
 
         setContentView(root);
@@ -252,21 +251,27 @@ public class MainActivity extends Activity implements SurfaceHolder.Callback {
         Button button = new Button(this);
         button.setText(label);
         button.setTextColor(Color.WHITE);
-        button.setTextSize(13f);
+        button.setTextSize(12f);
         button.setTypeface(Typeface.DEFAULT_BOLD);
         button.setAllCaps(false);
-        button.setMinWidth(dp(92));
-        button.setMinHeight(dp(48));
-        button.setPadding(dp(12), 0, dp(12), 0);
+        button.setMinWidth(dp(74));
+        button.setMinHeight(dp(42));
+        button.setPadding(dp(10), 0, dp(10), 0);
         button.setBackground(makeButtonBackground(false));
-        button.setElevation(dp(5));
-        button.setTranslationZ(dp(2));
-        LinearLayout.LayoutParams params = new LinearLayout.LayoutParams(LinearLayout.LayoutParams.WRAP_CONTENT, dp(50));
-        params.leftMargin = dp(4);
-        params.rightMargin = dp(4);
+        button.setElevation(dp(3));
+        button.setTranslationZ(dp(1));
+        LinearLayout.LayoutParams params = new LinearLayout.LayoutParams(LinearLayout.LayoutParams.WRAP_CONTENT, dp(42));
+        params.leftMargin = dp(3);
+        params.rightMargin = dp(3);
         button.setLayoutParams(params);
         button.setOnClickListener(view -> action.run());
         return button;
+    }
+
+    private View centerSpacer() {
+        View spacer = new View(this);
+        spacer.setLayoutParams(new LinearLayout.LayoutParams(dp(72), dp(42)));
+        return spacer;
     }
 
     private void setVideoMode(boolean enabled) {
@@ -288,32 +293,32 @@ public class MainActivity extends Activity implements SurfaceHolder.Callback {
     private GradientDrawable makeCapsuleBackground() {
         GradientDrawable drawable = new GradientDrawable(
                 GradientDrawable.Orientation.TOP_BOTTOM,
-                new int[]{0xD51A2C3B, 0xE607131F}
+                new int[]{0x882F3842, 0x66101820}
         );
-        drawable.setCornerRadius(dp(34));
-        drawable.setStroke(dp(1), 0x66FFFFFF);
+        drawable.setCornerRadius(dp(38));
+        drawable.setStroke(dp(1), 0x77FFFFFF);
         return drawable;
     }
 
     private GradientDrawable makeButtonBackground(boolean selected) {
-        int top = selected ? 0xEE0A84FF : 0xCC31475B;
-        int bottom = selected ? 0xEE0051B8 : 0xCC102030;
+        int top = selected ? 0xAA2E8CFF : 0x553A4652;
+        int bottom = selected ? 0xAA0051B8 : 0x44202B35;
         GradientDrawable drawable = new GradientDrawable(
                 GradientDrawable.Orientation.TOP_BOTTOM,
                 new int[]{top, bottom}
         );
         drawable.setCornerRadius(dp(22));
-        drawable.setStroke(dp(1), selected ? 0xAAFFFFFF : 0x44FFFFFF);
+        drawable.setStroke(dp(1), selected ? 0xBBFFFFFF : 0x55FFFFFF);
         return drawable;
     }
 
     private GradientDrawable makeShutterBackground() {
         GradientDrawable drawable = new GradientDrawable(
                 GradientDrawable.Orientation.TOP_BOTTOM,
-                new int[]{0xFFFFFFFF, 0xFFE5EEF7}
+                new int[]{0xF2FFFFFF, 0xCCEAF3FF}
         );
         drawable.setShape(GradientDrawable.OVAL);
-        drawable.setStroke(dp(5), 0xEE102030);
+        drawable.setStroke(dp(4), 0xCCFFFFFF);
         return drawable;
     }
 
