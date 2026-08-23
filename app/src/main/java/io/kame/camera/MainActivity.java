@@ -17,6 +17,8 @@ import android.os.Bundle;
 import android.os.ParcelFileDescriptor;
 import android.provider.MediaStore;
 import android.view.Gravity;
+import android.view.MotionEvent;
+import android.view.ScaleGestureDetector;
 import android.view.SurfaceHolder;
 import android.view.View;
 import android.view.Window;
@@ -26,6 +28,7 @@ import android.widget.Button;
 import android.widget.FrameLayout;
 import android.widget.HorizontalScrollView;
 import android.widget.LinearLayout;
+import android.widget.SeekBar;
 import android.widget.TextView;
 import android.widget.Toast;
 
@@ -53,6 +56,7 @@ public class MainActivity extends Activity implements SurfaceHolder.Callback {
     private Button focusButton;
     private Button exposureUpButton;
     private Button settingsButton;
+    private SeekBar zoomSlider;
     private Button qualitySettingButton;
     private Button bitrateSettingButton;
     private Button fpsSettingButton;
@@ -68,10 +72,15 @@ public class MainActivity extends Activity implements SurfaceHolder.Callback {
     private int cameraId = 0;
     private boolean surfaceReady = false;
     private boolean recording = false;
+    private boolean photoInProgress = false;
     private boolean torchEnabled = false;
     private boolean videoMode = false;
     private int zoomValue = 0;
     private int exposureValue = 0;
+    private float touchStartX = 0f;
+    private float touchStartY = 0f;
+    private boolean pinchHappened = false;
+    private ScaleGestureDetector scaleGestureDetector;
     private int videoQualityMode = 0;
     private int fpsMode = 0;
     private boolean boostedBitrate = false;
@@ -158,7 +167,19 @@ public class MainActivity extends Activity implements SurfaceHolder.Callback {
 
         surfaceView = new SurfaceView(this);
         surfaceView.setClickable(true);
-        surfaceView.setOnClickListener(view -> triggerAutoFocus());
+        scaleGestureDetector = new ScaleGestureDetector(this, new ScaleGestureDetector.SimpleOnScaleGestureListener() {
+            @Override
+            public boolean onScale(ScaleGestureDetector detector) {
+                pinchHappened = true;
+                if (detector.getScaleFactor() > 1.03f) {
+                    changeZoom(1);
+                } else if (detector.getScaleFactor() < 0.97f) {
+                    changeZoom(-1);
+                }
+                return true;
+            }
+        });
+        surfaceView.setOnTouchListener(this::handleSurfaceTouch);
         surfaceHolder = surfaceView.getHolder();
         surfaceHolder.addCallback(this);
         root.addView(surfaceView, new FrameLayout.LayoutParams(
@@ -178,6 +199,35 @@ public class MainActivity extends Activity implements SurfaceHolder.Callback {
                 FrameLayout.LayoutParams.WRAP_CONTENT,
                 Gravity.TOP
         ));
+
+        zoomSlider = new SeekBar(this);
+        zoomSlider.setMax(100);
+        zoomSlider.setProgress(0);
+        zoomSlider.setVisibility(View.GONE);
+        zoomSlider.setPadding(dp(28), 0, dp(28), 0);
+        zoomSlider.setOnSeekBarChangeListener(new SeekBar.OnSeekBarChangeListener() {
+            @Override
+            public void onProgressChanged(SeekBar seekBar, int progress, boolean fromUser) {
+                if (fromUser) setZoomFromSlider(progress);
+            }
+
+            @Override
+            public void onStartTrackingTouch(SeekBar seekBar) {
+            }
+
+            @Override
+            public void onStopTrackingTouch(SeekBar seekBar) {
+            }
+        });
+        FrameLayout.LayoutParams zoomParams = new FrameLayout.LayoutParams(
+                FrameLayout.LayoutParams.MATCH_PARENT,
+                dp(46),
+                Gravity.BOTTOM | Gravity.CENTER_HORIZONTAL
+        );
+        zoomParams.leftMargin = dp(28);
+        zoomParams.rightMargin = dp(28);
+        zoomParams.bottomMargin = dp(82);
+        root.addView(zoomSlider, zoomParams);
 
         FrameLayout controls = new FrameLayout(this);
         controls.setPadding(dp(8), dp(6), dp(8), dp(6));
@@ -203,8 +253,14 @@ public class MainActivity extends Activity implements SurfaceHolder.Callback {
         });
         switchButton = capsuleActionButton("VIRAR", this::switchCamera);
         flashButton = capsuleActionButton("FLASH", this::toggleFlash);
-        zoomOutButton = capsuleActionButton("ZOOM -", () -> changeZoom(-1));
-        zoomInButton = capsuleActionButton("ZOOM +", () -> changeZoom(1));
+        zoomOutButton = capsuleActionButton("ZOOM -", () -> {
+            showZoomSlider();
+            changeZoom(-1);
+        });
+        zoomInButton = capsuleActionButton("ZOOM +", () -> {
+            showZoomSlider();
+            changeZoom(1);
+        });
         exposureDownButton = capsuleActionButton("EV -", () -> changeExposure(-1));
         focusButton = capsuleActionButton("FOCO", this::triggerAutoFocus);
         exposureUpButton = capsuleActionButton("EV +", () -> changeExposure(1));
@@ -251,6 +307,26 @@ public class MainActivity extends Activity implements SurfaceHolder.Callback {
         ));
 
         setContentView(root);
+    }
+
+    private boolean handleSurfaceTouch(View view, MotionEvent event) {
+        if (scaleGestureDetector != null) scaleGestureDetector.onTouchEvent(event);
+        switch (event.getActionMasked()) {
+            case MotionEvent.ACTION_DOWN:
+                touchStartX = event.getX();
+                touchStartY = event.getY();
+                pinchHappened = false;
+                return true;
+            case MotionEvent.ACTION_UP:
+                float dx = Math.abs(event.getX() - touchStartX);
+                float dy = Math.abs(event.getY() - touchStartY);
+                if (!pinchHappened && dx < dp(18) && dy < dp(18)) {
+                    takePhoto();
+                }
+                return true;
+            default:
+                return true;
+        }
     }
 
     private Button capsuleActionButton(String label, Runnable action) {
@@ -545,7 +621,8 @@ public class MainActivity extends Activity implements SurfaceHolder.Callback {
     }
 
     private void takePhoto() {
-        if (camera == null || recording) return;
+        if (camera == null || recording || photoInProgress) return;
+        photoInProgress = true;
         try {
             applyHighQualityParameters(false);
             camera.takePicture(null, null, (data, cam) -> {
@@ -554,13 +631,21 @@ public class MainActivity extends Activity implements SurfaceHolder.Callback {
                     cam.startPreview();
                 } catch (Exception ignored) {
                 }
+                photoInProgress = false;
             });
         } catch (Exception error) {
+            photoInProgress = false;
             status("Erro ao fotografar: " + error.getMessage());
         }
     }
 
     private void savePhoto(byte[] data) {
+        if (data == null || data.length < 4 || (data[0] & 0xFF) != 0xFF || (data[1] & 0xFF) != 0xD8) {
+            status("Foto inválida recebida do sensor");
+            toast("Falha ao capturar foto");
+            return;
+        }
+
         String name = timestampName("IMG") + ".jpg";
         ContentValues values = new ContentValues();
         values.put(MediaStore.MediaColumns.DISPLAY_NAME, name);
@@ -569,19 +654,34 @@ public class MainActivity extends Activity implements SurfaceHolder.Callback {
         values.put(MediaStore.MediaColumns.DATE_TAKEN, System.currentTimeMillis());
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
             values.put(MediaStore.MediaColumns.RELATIVE_PATH, "Pictures/Kame Camera");
+            values.put(MediaStore.MediaColumns.IS_PENDING, 1);
         }
 
+        Uri uri = null;
         try {
-            Uri uri = getContentResolver().insert(MediaStore.Images.Media.EXTERNAL_CONTENT_URI, values);
+            uri = getContentResolver().insert(MediaStore.Images.Media.EXTERNAL_CONTENT_URI, values);
             if (uri == null) throw new IllegalStateException("MediaStore sem URI");
-            try (OutputStream output = getContentResolver().openOutputStream(uri)) {
+            try (OutputStream output = getContentResolver().openOutputStream(uri, "w")) {
                 if (output == null) throw new IllegalStateException("Sem saída para arquivo");
                 output.write(data);
+                output.flush();
+            }
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
+                ContentValues done = new ContentValues();
+                done.put(MediaStore.MediaColumns.IS_PENDING, 0);
+                getContentResolver().update(uri, done, null, null);
             }
             status("Foto salva: " + name);
             toast("Foto salva na galeria");
         } catch (Exception error) {
+            if (uri != null) {
+                try {
+                    getContentResolver().delete(uri, null, null);
+                } catch (Exception ignored) {
+                }
+            }
             status("Erro ao salvar foto: " + error.getMessage());
+            toast("Erro ao salvar foto");
         }
     }
 
@@ -751,10 +851,36 @@ public class MainActivity extends Activity implements SurfaceHolder.Callback {
             zoomValue = Math.max(0, Math.min(parameters.getMaxZoom(), zoomValue + delta));
             parameters.setZoom(zoomValue);
             camera.setParameters(parameters);
+            updateZoomSlider(parameters);
             status("Zoom: passo " + zoomValue + " de " + parameters.getMaxZoom());
         } catch (Exception error) {
             status("Erro no zoom: " + error.getMessage());
         }
+    }
+
+    private void setZoomFromSlider(int progress) {
+        if (camera == null) return;
+        try {
+            Camera.Parameters parameters = camera.getParameters();
+            if (!parameters.isZoomSupported()) return;
+            int max = parameters.getMaxZoom();
+            zoomValue = Math.max(0, Math.min(max, Math.round(max * (progress / 100f))));
+            parameters.setZoom(zoomValue);
+            camera.setParameters(parameters);
+        } catch (Exception error) {
+            status("Erro no zoom: " + error.getMessage());
+        }
+    }
+
+    private void updateZoomSlider(Camera.Parameters parameters) {
+        if (zoomSlider == null || parameters == null || !parameters.isZoomSupported()) return;
+        int max = Math.max(1, parameters.getMaxZoom());
+        int progress = Math.round((zoomValue * 100f) / max);
+        zoomSlider.setProgress(Math.max(0, Math.min(100, progress)));
+    }
+
+    private void showZoomSlider() {
+        if (zoomSlider != null) zoomSlider.setVisibility(View.VISIBLE);
     }
 
     private void changeExposure(int delta) {
