@@ -108,8 +108,8 @@ public class MainActivity extends Activity implements SurfaceHolder.Callback {
     private boolean boostedBitrate = false;
     private boolean videoStabilizationEnabled = true;
     private int selectedFilter = 0;
-    private int filterIntensity = 70;
-    private final String[] filterNames = new String[]{"Natural", "Cinema", "Vivo", "Quente", "Frio", "Mono", "Comida", "Retrato"};
+    private int filterIntensity = 100;
+    private final String[] filterNames = new String[]{"Natural", "Cinema", "Vivo", "Quente", "Frio", "Mono", "Comida", "Retrato", "HDR", "Drama", "Noir"};
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -867,6 +867,42 @@ public class MainActivity extends Activity implements SurfaceHolder.Callback {
         photoInProgress = true;
         try {
             applyHighQualityParameters(false);
+            final boolean[] captured = new boolean[]{false};
+            Runnable fallbackCapture = () -> {
+                if (!captured[0] && photoInProgress) {
+                    captured[0] = true;
+                    captureStillPicture();
+                }
+            };
+
+            try {
+                Camera.Parameters parameters = camera.getParameters();
+                List<String> focusModes = parameters.getSupportedFocusModes();
+                if (focusModes != null && focusModes.contains(Camera.Parameters.FOCUS_MODE_AUTO)) {
+                    parameters.setFocusMode(Camera.Parameters.FOCUS_MODE_AUTO);
+                    camera.setParameters(parameters);
+                }
+                camera.cancelAutoFocus();
+                camera.autoFocus((success, cam) -> {
+                    if (!captured[0]) {
+                        captured[0] = true;
+                        uiHandler.removeCallbacks(fallbackCapture);
+                        captureStillPicture();
+                    }
+                });
+                uiHandler.postDelayed(fallbackCapture, 900);
+            } catch (Exception focusError) {
+                captured[0] = true;
+                captureStillPicture();
+            }
+        } catch (Exception error) {
+            photoInProgress = false;
+            status("Erro ao fotografar: " + error.getMessage());
+        }
+    }
+
+    private void captureStillPicture() {
+        try {
             camera.takePicture(null, null, (data, cam) -> {
                 savePhoto(data);
                 try {
@@ -956,35 +992,63 @@ public class MainActivity extends Activity implements SurfaceHolder.Callback {
         ColorMatrix matrix = new ColorMatrix();
         ColorMatrix effect = new ColorMatrix();
         switch (filter) {
-            case 1: // Cinema: contraste leve, sombras frias.
-                effect.setSaturation(0.82f);
+            case 1: // Cinema: contraste forte, sombras levemente frias e pele quente.
+                effect.setSaturation(0.72f);
                 matrix.postConcat(effect);
-                matrix.postConcat(colorScale(1.06f, 1.02f, 0.92f));
+                matrix.postConcat(contrastMatrix(1.28f, -8f));
+                matrix.postConcat(colorScale(1.14f, 1.03f, 0.88f));
                 break;
-            case 2: // Vivo: cores fortes.
-                effect.setSaturation(1.35f);
+            case 2: // Vivo: cores fortes e contraste visível.
+                effect.setSaturation(1.85f);
                 matrix.postConcat(effect);
-                matrix.postConcat(colorScale(1.06f, 1.06f, 1.06f));
+                matrix.postConcat(contrastMatrix(1.20f, 8f));
+                matrix.postConcat(colorScale(1.06f, 1.08f, 1.04f));
                 break;
             case 3: // Quente.
-                matrix.postConcat(colorScale(1.16f, 1.05f, 0.92f));
+                effect.setSaturation(1.18f);
+                matrix.postConcat(effect);
+                matrix.postConcat(contrastMatrix(1.12f, 5f));
+                matrix.postConcat(colorScale(1.30f, 1.10f, 0.78f));
                 break;
             case 4: // Frio.
-                matrix.postConcat(colorScale(0.92f, 1.02f, 1.16f));
+                effect.setSaturation(1.08f);
+                matrix.postConcat(effect);
+                matrix.postConcat(contrastMatrix(1.10f, 0f));
+                matrix.postConcat(colorScale(0.78f, 1.02f, 1.32f));
                 break;
             case 5: // Mono.
                 effect.setSaturation(0f);
                 matrix.postConcat(effect);
+                matrix.postConcat(contrastMatrix(1.32f, 4f));
                 break;
-            case 6: // Comida: quente e saturado.
-                effect.setSaturation(1.25f);
+            case 6: // Comida: quente, saturado, mais claro.
+                effect.setSaturation(1.65f);
                 matrix.postConcat(effect);
-                matrix.postConcat(colorScale(1.12f, 1.08f, 0.95f));
+                matrix.postConcat(contrastMatrix(1.18f, 12f));
+                matrix.postConcat(colorScale(1.22f, 1.14f, 0.88f));
                 break;
-            case 7: // Retrato: leve calor e suavidade.
-                effect.setSaturation(1.08f);
+            case 7: // Retrato: tons de pele mais quentes e contraste moderado.
+                effect.setSaturation(1.20f);
                 matrix.postConcat(effect);
-                matrix.postConcat(colorScale(1.08f, 1.03f, 0.98f));
+                matrix.postConcat(contrastMatrix(1.08f, 10f));
+                matrix.postConcat(colorScale(1.14f, 1.06f, 0.96f));
+                break;
+            case 8: // HDR: contraste e saturação fortes para paisagem.
+                effect.setSaturation(1.45f);
+                matrix.postConcat(effect);
+                matrix.postConcat(contrastMatrix(1.35f, -2f));
+                matrix.postConcat(colorScale(1.05f, 1.08f, 1.05f));
+                break;
+            case 9: // Drama: escuro, cinematográfico e bem diferente.
+                effect.setSaturation(0.62f);
+                matrix.postConcat(effect);
+                matrix.postConcat(contrastMatrix(1.55f, -28f));
+                matrix.postConcat(colorScale(1.12f, 0.96f, 0.82f));
+                break;
+            case 10: // Noir: preto e branco pesado.
+                effect.setSaturation(0f);
+                matrix.postConcat(effect);
+                matrix.postConcat(contrastMatrix(1.65f, -18f));
                 break;
             default:
                 break;
@@ -999,6 +1063,17 @@ public class MainActivity extends Activity implements SurfaceHolder.Callback {
             }
             matrix.set(mixed);
         }
+        return matrix;
+    }
+
+    private ColorMatrix contrastMatrix(float contrast, float brightness) {
+        float translate = (-0.5f * contrast + 0.5f) * 255f + brightness;
+        ColorMatrix matrix = new ColorMatrix(new float[]{
+                contrast, 0, 0, 0, translate,
+                0, contrast, 0, 0, translate,
+                0, 0, contrast, 0, translate,
+                0, 0, 0, 1, 0
+        });
         return matrix;
     }
 
