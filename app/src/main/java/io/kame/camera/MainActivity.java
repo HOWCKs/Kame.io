@@ -43,7 +43,6 @@ public class MainActivity extends Activity implements SurfaceHolder.Callback {
 
     private SurfaceView surfaceView;
     private TextView statusText;
-    private Button shutterButton;
     private Button photoModeButton;
     private Button videoModeButton;
     private Button switchButton;
@@ -183,8 +182,14 @@ public class MainActivity extends Activity implements SurfaceHolder.Callback {
         actionsRow.setGravity(Gravity.CENTER_VERTICAL);
         actionsRow.setPadding(dp(8), 0, dp(8), 0);
 
-        photoModeButton = capsuleActionButton("FOTO", () -> setVideoMode(false));
-        videoModeButton = capsuleActionButton("VÍDEO", () -> setVideoMode(true));
+        photoModeButton = capsuleActionButton("FOTO", () -> {
+            setVideoMode(false);
+            takePhoto();
+        });
+        videoModeButton = capsuleActionButton("VÍDEO", () -> {
+            setVideoMode(true);
+            toggleVideo();
+        });
         switchButton = capsuleActionButton("VIRAR", this::switchCamera);
         flashButton = capsuleActionButton("FLASH", this::toggleFlash);
         zoomOutButton = capsuleActionButton("ZOOM -", () -> changeZoom(-1));
@@ -196,7 +201,6 @@ public class MainActivity extends Activity implements SurfaceHolder.Callback {
         actionsRow.addView(photoModeButton);
         actionsRow.addView(videoModeButton);
         actionsRow.addView(switchButton);
-        actionsRow.addView(centerSpacer());
         actionsRow.addView(flashButton);
         actionsRow.addView(zoomOutButton);
         actionsRow.addView(zoomInButton);
@@ -215,28 +219,11 @@ public class MainActivity extends Activity implements SurfaceHolder.Callback {
         );
         controls.addView(scrollView, scrollParams);
 
-        shutterButton = new Button(this);
-        shutterButton.setText("●");
-        shutterButton.setTextSize(30f);
-        shutterButton.setTextColor(0xFFE53935);
-        shutterButton.setTypeface(Typeface.DEFAULT_BOLD);
-        shutterButton.setBackground(makeShutterBackground());
-        shutterButton.setElevation(dp(12));
-        shutterButton.setTranslationZ(dp(8));
-        FrameLayout.LayoutParams shutterParams = new FrameLayout.LayoutParams(dp(58), dp(58), Gravity.CENTER);
-        shutterButton.setLayoutParams(shutterParams);
-        shutterButton.setOnClickListener(view -> handleShutterClick());
-        shutterButton.setOnLongClickListener(view -> {
-            setVideoMode(true);
-            toggleVideo();
-            return true;
-        });
-        controls.addView(shutterButton);
         setVideoMode(false);
 
         FrameLayout.LayoutParams controlsParams = new FrameLayout.LayoutParams(
                 FrameLayout.LayoutParams.MATCH_PARENT,
-                dp(76),
+                dp(62),
                 Gravity.BOTTOM | Gravity.CENTER_HORIZONTAL
         );
         controlsParams.leftMargin = dp(18);
@@ -268,26 +255,11 @@ public class MainActivity extends Activity implements SurfaceHolder.Callback {
         return button;
     }
 
-    private View centerSpacer() {
-        View spacer = new View(this);
-        spacer.setLayoutParams(new LinearLayout.LayoutParams(dp(72), dp(42)));
-        return spacer;
-    }
-
     private void setVideoMode(boolean enabled) {
         videoMode = enabled;
         if (photoModeButton != null) photoModeButton.setBackground(makeButtonBackground(!enabled));
         if (videoModeButton != null) videoModeButton.setBackground(makeButtonBackground(enabled));
-        if (shutterButton != null) {
-            shutterButton.setText(enabled ? "■" : "●");
-            shutterButton.setTextColor(recording ? Color.WHITE : 0xFFE53935);
-            shutterButton.setBackground(enabled && recording ? makeRecordingBackground() : makeShutterBackground());
-        }
-        status(enabled ? "Modo vídeo • toque no botão redondo para gravar" : "Modo foto • toque no botão redondo para fotografar");
-    }
-
-    private void handleShutterClick() {
-        if (videoMode) toggleVideo(); else takePhoto();
+        status(enabled ? "Modo vídeo • toque em VÍDEO para iniciar/parar" : "Modo foto • toque em FOTO para fotografar");
     }
 
     private GradientDrawable makeCapsuleBackground() {
@@ -309,26 +281,6 @@ public class MainActivity extends Activity implements SurfaceHolder.Callback {
         );
         drawable.setCornerRadius(dp(22));
         drawable.setStroke(dp(1), selected ? 0xBBFFFFFF : 0x55FFFFFF);
-        return drawable;
-    }
-
-    private GradientDrawable makeShutterBackground() {
-        GradientDrawable drawable = new GradientDrawable(
-                GradientDrawable.Orientation.TOP_BOTTOM,
-                new int[]{0xF2FFFFFF, 0xCCEAF3FF}
-        );
-        drawable.setShape(GradientDrawable.OVAL);
-        drawable.setStroke(dp(4), 0xCCFFFFFF);
-        return drawable;
-    }
-
-    private GradientDrawable makeRecordingBackground() {
-        GradientDrawable drawable = new GradientDrawable(
-                GradientDrawable.Orientation.TOP_BOTTOM,
-                new int[]{0xFFFF4B4B, 0xFFB00020}
-        );
-        drawable.setShape(GradientDrawable.OVAL);
-        drawable.setStroke(dp(5), 0xEEFFFFFF);
         return drawable;
     }
 
@@ -476,13 +428,10 @@ public class MainActivity extends Activity implements SurfaceHolder.Callback {
             mediaRecorder.start();
 
             recording = true;
-            if (shutterButton != null) {
-                shutterButton.setText("■");
-                shutterButton.setTextColor(Color.WHITE);
-                shutterButton.setBackground(makeRecordingBackground());
-            }
+            if (videoModeButton != null) videoModeButton.setText("PARAR");
             status("Gravando vídeo em perfil alto...");
         } catch (Exception error) {
+            if (videoModeButton != null) videoModeButton.setText("VÍDEO");
             cleanupRecorder();
             reconnectCameraAfterRecording();
             status("Erro ao gravar: " + error.getMessage());
@@ -498,11 +447,7 @@ public class MainActivity extends Activity implements SurfaceHolder.Callback {
             status("Gravação finalizada com aviso: " + error.getMessage());
         } finally {
             recording = false;
-            if (shutterButton != null) {
-                shutterButton.setText(videoMode ? "■" : "●");
-                shutterButton.setTextColor(0xFFE53935);
-                shutterButton.setBackground(makeShutterBackground());
-            }
+            if (videoModeButton != null) videoModeButton.setText("VÍDEO");
             cleanupRecorder();
             reconnectCameraAfterRecording();
         }
