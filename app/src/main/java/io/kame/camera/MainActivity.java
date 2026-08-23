@@ -4,6 +4,8 @@ import android.Manifest;
 import android.app.Activity;
 import android.content.ContentResolver;
 import android.content.ContentValues;
+import android.content.res.ColorStateList;
+import android.content.res.Configuration;
 import android.content.pm.PackageManager;
 import android.graphics.Color;
 import android.graphics.Typeface;
@@ -15,11 +17,15 @@ import android.net.Uri;
 import android.os.Build;
 import android.os.Bundle;
 import android.os.ParcelFileDescriptor;
+import android.os.Handler;
+import android.os.Looper;
 import android.provider.MediaStore;
 import android.view.Gravity;
+import android.view.HapticFeedbackConstants;
 import android.view.MotionEvent;
 import android.view.ScaleGestureDetector;
 import android.view.SurfaceHolder;
+import android.view.Surface;
 import android.view.View;
 import android.view.Window;
 import android.view.WindowManager;
@@ -80,6 +86,10 @@ public class MainActivity extends Activity implements SurfaceHolder.Callback {
     private boolean gestureConsumed = false;
     private long lastPinchAtMs = 0L;
     private ScaleGestureDetector scaleGestureDetector;
+    private final Handler uiHandler = new Handler(Looper.getMainLooper());
+    private final Runnable hideZoomSliderRunnable = () -> {
+        if (zoomSlider != null) zoomSlider.setVisibility(View.GONE);
+    };
     private int videoQualityMode = 0;
     private int fpsMode = 0;
     private boolean boostedBitrate = false;
@@ -206,6 +216,7 @@ public class MainActivity extends Activity implements SurfaceHolder.Callback {
         zoomSlider.setProgress(0);
         zoomSlider.setVisibility(View.GONE);
         zoomSlider.setPadding(dp(28), 0, dp(28), 0);
+        tintZoomSlider();
         zoomSlider.setOnSeekBarChangeListener(new SeekBar.OnSeekBarChangeListener() {
             @Override
             public void onProgressChanged(SeekBar seekBar, int progress, boolean fromUser) {
@@ -214,10 +225,12 @@ public class MainActivity extends Activity implements SurfaceHolder.Callback {
 
             @Override
             public void onStartTrackingTouch(SeekBar seekBar) {
+                uiHandler.removeCallbacks(hideZoomSliderRunnable);
             }
 
             @Override
             public void onStopTrackingTouch(SeekBar seekBar) {
+                scheduleHideZoomSlider();
             }
         });
         FrameLayout.LayoutParams zoomParams = new FrameLayout.LayoutParams(
@@ -335,7 +348,7 @@ public class MainActivity extends Activity implements SurfaceHolder.Callback {
     private Button capsuleActionButton(String label, Runnable action) {
         Button button = new Button(this);
         button.setText(label);
-        button.setTextColor(0xFF111111);
+        button.setTextColor(isDarkMode() ? Color.WHITE : 0xFF111111);
         button.setTextSize(12f);
         button.setTypeface(Typeface.DEFAULT_BOLD);
         button.setAllCaps(false);
@@ -349,7 +362,10 @@ public class MainActivity extends Activity implements SurfaceHolder.Callback {
         params.leftMargin = dp(3);
         params.rightMargin = dp(3);
         button.setLayoutParams(params);
-        button.setOnClickListener(view -> action.run());
+        button.setOnClickListener(view -> {
+            tactileClick(view);
+            action.run();
+        });
         return button;
     }
 
@@ -362,7 +378,11 @@ public class MainActivity extends Activity implements SurfaceHolder.Callback {
 
     private void applyModeButtonState(Button button, boolean selected) {
         if (button == null) return;
-        button.setTextColor(selected ? 0xFF050510 : 0xFF181818);
+        if (isDarkMode()) {
+            button.setTextColor(selected ? Color.WHITE : 0xFFEDEDED);
+        } else {
+            button.setTextColor(selected ? 0xFF050510 : 0xFF181818);
+        }
         button.setBackground(makeButtonBackground(selected));
         button.setElevation(selected ? dp(12) : dp(3));
         button.setTranslationZ(selected ? dp(7) : dp(1));
@@ -386,7 +406,7 @@ public class MainActivity extends Activity implements SurfaceHolder.Callback {
 
         TextView title = new TextView(this);
         title.setText("Configurações de vídeo");
-        title.setTextColor(Color.WHITE);
+        title.setTextColor(isDarkMode() ? Color.WHITE : 0xFF111111);
         title.setTextSize(18f);
         title.setTypeface(Typeface.DEFAULT_BOLD);
         title.setGravity(Gravity.CENTER);
@@ -423,13 +443,16 @@ public class MainActivity extends Activity implements SurfaceHolder.Callback {
     private Button settingsOptionButton(String label, Runnable action) {
         Button button = new Button(this);
         button.setText(label);
-        button.setTextColor(Color.WHITE);
+        button.setTextColor(isDarkMode() ? Color.WHITE : 0xFF111111);
         button.setTextSize(14f);
         button.setTypeface(Typeface.DEFAULT_BOLD);
         button.setAllCaps(false);
         button.setPadding(dp(12), 0, dp(12), 0);
         button.setBackground(makeButtonBackground(false));
-        button.setOnClickListener(view -> action.run());
+        button.setOnClickListener(view -> {
+            tactileClick(view);
+            action.run();
+        });
         LinearLayout.LayoutParams params = new LinearLayout.LayoutParams(
                 LinearLayout.LayoutParams.MATCH_PARENT,
                 dp(48)
@@ -502,34 +525,62 @@ public class MainActivity extends Activity implements SurfaceHolder.Callback {
     }
 
     private GradientDrawable makeSettingsCardBackground() {
-        GradientDrawable drawable = new GradientDrawable(
-                GradientDrawable.Orientation.TOP_BOTTOM,
-                new int[]{0xEE252525, 0xF0111111}
-        );
-        drawable.setCornerRadius(dp(26));
-        drawable.setStroke(dp(1), 0x12FFFFFF);
+        GradientDrawable drawable;
+        if (isDarkMode()) {
+            drawable = new GradientDrawable(
+                    GradientDrawable.Orientation.TOP_BOTTOM,
+                    new int[]{0xF0202020, 0xF0101010}
+            );
+            drawable.setStroke(dp(1), 0x12FFFFFF);
+        } else {
+            drawable = new GradientDrawable(
+                    GradientDrawable.Orientation.TOP_BOTTOM,
+                    new int[]{0xF2FFFFFF, 0xEDEFEFEF}
+            );
+            drawable.setStroke(dp(1), 0x44FFFFFF);
+        }
+        drawable.setCornerRadius(dp(30));
         return drawable;
     }
 
     private GradientDrawable makeCapsuleBackground() {
-        GradientDrawable drawable = new GradientDrawable(
-                GradientDrawable.Orientation.TOP_BOTTOM,
-                new int[]{0xF2FFFFFF, 0xDDEFEFEF}
-        );
+        GradientDrawable drawable;
+        if (isDarkMode()) {
+            drawable = new GradientDrawable(
+                    GradientDrawable.Orientation.TOP_BOTTOM,
+                    new int[]{0xEE202020, 0xDD101010}
+            );
+            drawable.setStroke(dp(1), 0x12FFFFFF);
+        } else {
+            drawable = new GradientDrawable(
+                    GradientDrawable.Orientation.TOP_BOTTOM,
+                    new int[]{0xF2FFFFFF, 0xDDEFEFEF}
+            );
+            drawable.setStroke(dp(1), 0x55FFFFFF);
+        }
         drawable.setCornerRadius(dp(30));
-        drawable.setStroke(dp(1), 0x55FFFFFF);
         return drawable;
     }
 
     private GradientDrawable makeButtonBackground(boolean selected) {
-        int top = selected ? 0xFFE8E8E8 : 0x20FFFFFF;
-        int bottom = selected ? 0xFFD6D6D6 : 0x10FFFFFF;
+        int top;
+        int bottom;
+        int stroke;
+        if (isDarkMode()) {
+            top = selected ? 0xFF3A3A3A : 0x22333333;
+            bottom = selected ? 0xFF202020 : 0x16101010;
+            stroke = selected ? 0x26FFFFFF : 0x08FFFFFF;
+        } else {
+            top = selected ? 0xFFE8E8E8 : 0x20FFFFFF;
+            bottom = selected ? 0xFFD6D6D6 : 0x10FFFFFF;
+            stroke = selected ? 0xFFFFFFFF : 0x22FFFFFF;
+        }
         GradientDrawable drawable = new GradientDrawable(
                 GradientDrawable.Orientation.TOP_BOTTOM,
                 new int[]{top, bottom}
         );
         drawable.setCornerRadius(dp(24));
-        drawable.setStroke(dp(1), selected ? 0xFFFFFFFF : 0x22FFFFFF);
+        drawable.setStroke(dp(1), stroke);
         return drawable;
     }
 
@@ -541,6 +592,29 @@ public class MainActivity extends Activity implements SurfaceHolder.Callback {
         drawable.setCornerRadius(dp(24));
         drawable.setStroke(dp(1), 0x44FF6B6B);
         return drawable;
+    }
+
+    private boolean isDarkMode() {
+        return (getResources().getConfiguration().uiMode & Configuration.UI_MODE_NIGHT_MASK)
+                == Configuration.UI_MODE_NIGHT_YES;
+    }
+
+    private void tactileClick(View view) {
+        view.performHapticFeedback(HapticFeedbackConstants.VIRTUAL_KEY);
+        view.animate().scaleX(0.96f).scaleY(0.96f).setDuration(70).withEndAction(() ->
+                view.animate().scaleX(1f).scaleY(1f).setDuration(90).start()
+        ).start();
+    }
+
+    private void tintZoomSlider() {
+        if (zoomSlider == null) return;
+        int progress = isDarkMode() ? 0xFFEDEDED : 0xFF222222;
+        int background = isDarkMode() ? 0x44FFFFFF : 0x33000000;
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP) {
+            zoomSlider.setProgressTintList(ColorStateList.valueOf(progress));
+            zoomSlider.setThumbTintList(ColorStateList.valueOf(progress));
+            zoomSlider.setProgressBackgroundTintList(ColorStateList.valueOf(background));
+        }
     }
 
     private int dp(int value) {
@@ -579,6 +653,9 @@ public class MainActivity extends Activity implements SurfaceHolder.Callback {
         try {
             Camera.Parameters parameters = camera.getParameters();
             parameters.setJpegQuality(100);
+            if (!videoMode) {
+                parameters.setRotation(calculateMediaOrientation());
+            }
 
             List<Camera.Size> pictureSizes = parameters.getSupportedPictureSizes();
             if (pictureSizes != null && !pictureSizes.isEmpty()) {
@@ -708,7 +785,7 @@ public class MainActivity extends Activity implements SurfaceHolder.Callback {
             mediaRecorder.setProfile(profile);
             // Mantemos bitrate e FPS no perfil nativo para evitar arquivos quebrados em aparelhos
             // que rejeitam combinações manuais. As opções continuam no menu para evolução gradual.
-            mediaRecorder.setOrientationHint(isFrontCamera(cameraId) ? 270 : 90);
+            mediaRecorder.setOrientationHint(calculateMediaOrientation());
 
             currentVideoUri = createVideoUri();
             videoFileDescriptor = getContentResolver().openFileDescriptor(currentVideoUri, "w");
@@ -819,6 +896,33 @@ public class MainActivity extends Activity implements SurfaceHolder.Callback {
         return CamcorderProfile.get(cameraId, CamcorderProfile.QUALITY_HIGH);
     }
 
+    private int calculateMediaOrientation() {
+        Camera.CameraInfo info = new Camera.CameraInfo();
+        Camera.getCameraInfo(cameraId, info);
+        int rotation = getWindowManager().getDefaultDisplay().getRotation();
+        int degrees;
+        switch (rotation) {
+            case Surface.ROTATION_90:
+                degrees = 90;
+                break;
+            case Surface.ROTATION_180:
+                degrees = 180;
+                break;
+            case Surface.ROTATION_270:
+                degrees = 270;
+                break;
+            case Surface.ROTATION_0:
+            default:
+                degrees = 0;
+                break;
+        }
+        if (info.facing == Camera.CameraInfo.CAMERA_FACING_FRONT) {
+            int result = (info.orientation + degrees) % 360;
+            return (360 - result) % 360;
+        }
+        return (info.orientation - degrees + 360) % 360;
+    }
+
     private void switchCamera() {
         if (recording) {
             toast("Pare a gravação antes de trocar a câmera.");
@@ -872,6 +976,8 @@ public class MainActivity extends Activity implements SurfaceHolder.Callback {
             zoomValue = Math.max(0, Math.min(max, Math.round(max * (progress / 100f))));
             parameters.setZoom(zoomValue);
             camera.setParameters(parameters);
+            updateZoomSlider(parameters);
+            scheduleHideZoomSlider();
         } catch (Exception error) {
             status("Erro no zoom: " + error.getMessage());
         }
@@ -885,7 +991,16 @@ public class MainActivity extends Activity implements SurfaceHolder.Callback {
     }
 
     private void showZoomSlider() {
-        if (zoomSlider != null) zoomSlider.setVisibility(View.VISIBLE);
+        if (zoomSlider != null) {
+            zoomSlider.setVisibility(View.VISIBLE);
+            uiHandler.removeCallbacks(hideZoomSliderRunnable);
+            scheduleHideZoomSlider();
+        }
+    }
+
+    private void scheduleHideZoomSlider() {
+        uiHandler.removeCallbacks(hideZoomSliderRunnable);
+        uiHandler.postDelayed(hideZoomSliderRunnable, 1800);
     }
 
     private void changeExposure(int delta) {
