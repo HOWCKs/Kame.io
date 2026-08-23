@@ -6,6 +6,8 @@ import android.content.ContentResolver;
 import android.content.ContentValues;
 import android.content.pm.PackageManager;
 import android.graphics.Color;
+import android.graphics.Typeface;
+import android.graphics.drawable.GradientDrawable;
 import android.hardware.Camera;
 import android.media.CamcorderProfile;
 import android.media.MediaRecorder;
@@ -135,20 +137,31 @@ public class MainActivity extends Activity implements SurfaceHolder.Callback {
         LinearLayout controls = new LinearLayout(this);
         controls.setOrientation(LinearLayout.VERTICAL);
         controls.setGravity(Gravity.CENTER);
-        controls.setPadding(16, 12, 16, 26);
-        controls.setBackgroundColor(0x55000000);
+        controls.setPadding(dp(14), dp(14), dp(14), dp(14));
+        controls.setBackground(makeCardBackground());
+        controls.setElevation(dp(14));
+        controls.setTranslationZ(dp(8));
 
         LinearLayout row1 = new LinearLayout(this);
         row1.setGravity(Gravity.CENTER);
+        row1.setLayoutParams(new LinearLayout.LayoutParams(
+                LinearLayout.LayoutParams.MATCH_PARENT,
+                LinearLayout.LayoutParams.WRAP_CONTENT
+        ));
         LinearLayout row2 = new LinearLayout(this);
         row2.setGravity(Gravity.CENTER);
+        row2.setPadding(0, dp(8), 0, 0);
+        row2.setLayoutParams(new LinearLayout.LayoutParams(
+                LinearLayout.LayoutParams.MATCH_PARENT,
+                LinearLayout.LayoutParams.WRAP_CONTENT
+        ));
 
-        photoButton = cameraButton("Foto", this::takePhoto);
-        videoButton = cameraButton("Gravar", this::toggleVideo);
-        switchButton = cameraButton("Virar", this::switchCamera);
-        flashButton = cameraButton("Flash", this::toggleFlash);
-        zoomOutButton = cameraButton("Zoom -", () -> changeZoom(-1));
-        zoomInButton = cameraButton("Zoom +", () -> changeZoom(1));
+        photoButton = cameraButton("FOTO", this::takePhoto);
+        videoButton = cameraButton("GRAVAR", this::toggleVideo);
+        switchButton = cameraButton("VIRAR", this::switchCamera);
+        flashButton = cameraButton("FLASH", this::toggleFlash);
+        zoomOutButton = cameraButton("ZOOM -", () -> changeZoom(-1));
+        zoomInButton = cameraButton("ZOOM +", () -> changeZoom(1));
 
         row1.addView(photoButton);
         row1.addView(videoButton);
@@ -158,11 +171,16 @@ public class MainActivity extends Activity implements SurfaceHolder.Callback {
         row2.addView(zoomInButton);
         controls.addView(row1);
         controls.addView(row2);
-        root.addView(controls, new FrameLayout.LayoutParams(
+
+        FrameLayout.LayoutParams controlsParams = new FrameLayout.LayoutParams(
                 FrameLayout.LayoutParams.MATCH_PARENT,
                 FrameLayout.LayoutParams.WRAP_CONTENT,
-                Gravity.BOTTOM
-        ));
+                Gravity.BOTTOM | Gravity.CENTER_HORIZONTAL
+        );
+        controlsParams.leftMargin = dp(18);
+        controlsParams.rightMargin = dp(18);
+        controlsParams.bottomMargin = dp(86);
+        root.addView(controls, controlsParams);
 
         setContentView(root);
     }
@@ -171,9 +189,45 @@ public class MainActivity extends Activity implements SurfaceHolder.Callback {
         Button button = new Button(this);
         button.setText(label);
         button.setTextColor(Color.WHITE);
-        button.setBackgroundColor(0xAA102030);
+        button.setTextSize(15f);
+        button.setTypeface(Typeface.DEFAULT_BOLD);
+        button.setAllCaps(false);
+        button.setMinWidth(dp(96));
+        button.setMinHeight(dp(54));
+        button.setPadding(dp(8), 0, dp(8), 0);
+        button.setBackground(makeButtonBackground());
+        button.setElevation(dp(6));
+        button.setTranslationZ(dp(3));
+        LinearLayout.LayoutParams params = new LinearLayout.LayoutParams(0, dp(56), 1f);
+        params.leftMargin = dp(4);
+        params.rightMargin = dp(4);
+        button.setLayoutParams(params);
         button.setOnClickListener(view -> action.run());
         return button;
+    }
+
+    private GradientDrawable makeCardBackground() {
+        GradientDrawable drawable = new GradientDrawable(
+                GradientDrawable.Orientation.TOP_BOTTOM,
+                new int[]{0xCC1A2C3B, 0xDD07131F}
+        );
+        drawable.setCornerRadius(dp(22));
+        drawable.setStroke(dp(1), 0x55FFFFFF);
+        return drawable;
+    }
+
+    private GradientDrawable makeButtonBackground() {
+        GradientDrawable drawable = new GradientDrawable(
+                GradientDrawable.Orientation.TOP_BOTTOM,
+                new int[]{0xCC31475B, 0xCC102030}
+        );
+        drawable.setCornerRadius(dp(15));
+        drawable.setStroke(dp(1), 0x44FFFFFF);
+        return drawable;
+    }
+
+    private int dp(int value) {
+        return Math.round(value * getResources().getDisplayMetrics().density);
     }
 
     private void openCameraWhenReady() {
