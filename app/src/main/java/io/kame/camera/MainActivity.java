@@ -10,6 +10,7 @@ import android.graphics.Typeface;
 import android.graphics.drawable.GradientDrawable;
 import android.hardware.Camera;
 import android.media.CamcorderProfile;
+import android.media.ExifInterface;
 import android.media.MediaRecorder;
 import android.net.Uri;
 import android.os.Build;
@@ -564,7 +565,9 @@ public class MainActivity extends Activity implements SurfaceHolder.Callback {
         String name = timestampName("IMG") + ".jpg";
         ContentValues values = new ContentValues();
         values.put(MediaStore.MediaColumns.DISPLAY_NAME, name);
+        values.put(MediaStore.MediaColumns.TITLE, name.replace(".jpg", ""));
         values.put(MediaStore.MediaColumns.MIME_TYPE, "image/jpeg");
+        values.put(MediaStore.MediaColumns.DATE_TAKEN, System.currentTimeMillis());
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
             values.put(MediaStore.MediaColumns.RELATIVE_PATH, "Pictures/Kame Camera");
         }
@@ -576,11 +579,49 @@ public class MainActivity extends Activity implements SurfaceHolder.Callback {
                 if (output == null) throw new IllegalStateException("Sem saída para arquivo");
                 output.write(data);
             }
+            writePhotoExifMetadata(uri);
             status("Foto salva: " + name);
             toast("Foto salva na galeria");
         } catch (Exception error) {
             status("Erro ao salvar foto: " + error.getMessage());
         }
+    }
+
+    private void writePhotoExifMetadata(Uri uri) {
+        try (ParcelFileDescriptor descriptor = getContentResolver().openFileDescriptor(uri, "rw")) {
+            if (descriptor == null) return;
+            ExifInterface exif = new ExifInterface(descriptor.getFileDescriptor());
+            String timestamp = new SimpleDateFormat("yyyy:MM:dd HH:mm:ss", Locale.US).format(new Date());
+            exif.setAttribute(ExifInterface.TAG_SOFTWARE, "Kame Camera 0.1.0-alpha");
+            exif.setAttribute(ExifInterface.TAG_MAKE, Build.MANUFACTURER);
+            exif.setAttribute(ExifInterface.TAG_MODEL, Build.MODEL);
+            exif.setAttribute(ExifInterface.TAG_DATETIME, timestamp);
+            exif.setAttribute(ExifInterface.TAG_DATETIME_ORIGINAL, timestamp);
+            exif.setAttribute(ExifInterface.TAG_IMAGE_DESCRIPTION, buildPhotoMetadataSummary());
+            exif.setAttribute(ExifInterface.TAG_USER_COMMENT, buildPhotoMetadataSummary());
+            exif.saveAttributes();
+        } catch (Exception ignored) {
+            // Metadados EXIF são melhoria extra; a foto não deve falhar se algum aparelho recusar edição.
+        }
+    }
+
+    private String buildPhotoMetadataSummary() {
+        String pictureSize = "desconhecida";
+        try {
+            if (camera != null) {
+                Camera.Size size = camera.getParameters().getPictureSize();
+                if (size != null) pictureSize = size.width + "x" + size.height;
+            }
+        } catch (Exception ignored) {
+        }
+        return "App=Kame Camera; Foto=JPEG 100%; Resolucao=" + pictureSize
+                + "; CameraId=" + cameraId
+                + "; ZoomStep=" + zoomValue
+                + "; ExposicaoEVStep=" + exposureValue
+                + "; VideoQualidadeAtual=" + videoQualityLabel()
+                + "; VideoFPSAtual=" + fpsLabel()
+                + "; VideoBitrate=" + (boostedBitrate ? "REFORCADO" : "NORMAL")
+                + "; VideoEstabilizacao=" + (videoStabilizationEnabled ? "ON" : "OFF");
     }
 
     private void toggleVideo() {
@@ -605,7 +646,7 @@ public class MainActivity extends Activity implements SurfaceHolder.Callback {
                 mediaRecorder.setVideoEncodingBitRate(boosted);
             }
             int fps = selectedFps();
-            if (fps > 0) {
+            if (fps > 0 && isFpsSupported(fps)) {
                 mediaRecorder.setVideoFrameRate(fps);
             }
             mediaRecorder.setOrientationHint(isFrontCamera(cameraId) ? 270 : 90);
@@ -683,13 +724,31 @@ public class MainActivity extends Activity implements SurfaceHolder.Callback {
         String name = timestampName("VID") + ".mp4";
         ContentValues values = new ContentValues();
         values.put(MediaStore.MediaColumns.DISPLAY_NAME, name);
+        values.put(MediaStore.MediaColumns.TITLE, name.replace(".mp4", ""));
         values.put(MediaStore.MediaColumns.MIME_TYPE, "video/mp4");
+        values.put(MediaStore.MediaColumns.DATE_TAKEN, System.currentTimeMillis());
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
             values.put(MediaStore.Video.Media.RELATIVE_PATH, "Movies/Kame Camera");
         }
         Uri uri = getContentResolver().insert(MediaStore.Video.Media.EXTERNAL_CONTENT_URI, values);
         if (uri == null) throw new IllegalStateException("MediaStore sem URI para vídeo");
         return uri;
+    }
+
+    private boolean isFpsSupported(int fps) {
+        try {
+            if (camera == null) return false;
+            List<int[]> ranges = camera.getParameters().getSupportedPreviewFpsRange();
+            int target = fps * 1000;
+            if (ranges == null) return false;
+            for (int[] range : ranges) {
+                if (range != null && range.length >= 2 && range[0] <= target && range[1] >= target) {
+                    return true;
+                }
+            }
+        } catch (Exception ignored) {
+        }
+        return false;
     }
 
     private CamcorderProfile getBestProfile() {
