@@ -18,6 +18,9 @@ import android.os.ParcelFileDescriptor;
 import android.provider.MediaStore;
 import android.view.Gravity;
 import android.view.SurfaceHolder;
+import android.view.View;
+import android.view.Window;
+import android.view.WindowManager;
 import android.view.SurfaceView;
 import android.widget.Button;
 import android.widget.FrameLayout;
@@ -61,6 +64,7 @@ public class MainActivity extends Activity implements SurfaceHolder.Callback {
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
+        enableImmersiveMode();
         cameraId = findBackCameraId();
         buildUi();
         if (hasRequiredPermissions()) {
@@ -80,7 +84,29 @@ public class MainActivity extends Activity implements SurfaceHolder.Callback {
     @Override
     protected void onResume() {
         super.onResume();
+        enableImmersiveMode();
         if (hasRequiredPermissions()) openCameraWhenReady();
+    }
+
+
+    @Override
+    public void onWindowFocusChanged(boolean hasFocus) {
+        super.onWindowFocusChanged(hasFocus);
+        if (hasFocus) enableImmersiveMode();
+    }
+
+    private void enableImmersiveMode() {
+        Window window = getWindow();
+        window.setFlags(WindowManager.LayoutParams.FLAG_FULLSCREEN, WindowManager.LayoutParams.FLAG_FULLSCREEN);
+        View decorView = window.getDecorView();
+        decorView.setSystemUiVisibility(
+                View.SYSTEM_UI_FLAG_IMMERSIVE_STICKY
+                        | View.SYSTEM_UI_FLAG_FULLSCREEN
+                        | View.SYSTEM_UI_FLAG_HIDE_NAVIGATION
+                        | View.SYSTEM_UI_FLAG_LAYOUT_FULLSCREEN
+                        | View.SYSTEM_UI_FLAG_LAYOUT_HIDE_NAVIGATION
+                        | View.SYSTEM_UI_FLAG_LAYOUT_STABLE
+        );
     }
 
     @Override
