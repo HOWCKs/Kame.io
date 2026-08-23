@@ -50,8 +50,6 @@ public class MainActivity extends Activity implements SurfaceHolder.Callback {
     private Button videoModeButton;
     private Button switchButton;
     private Button flashButton;
-    private Button zoomInButton;
-    private Button zoomOutButton;
     private Button exposureDownButton;
     private Button focusButton;
     private Button exposureUpButton;
@@ -79,7 +77,8 @@ public class MainActivity extends Activity implements SurfaceHolder.Callback {
     private int exposureValue = 0;
     private float touchStartX = 0f;
     private float touchStartY = 0f;
-    private boolean pinchHappened = false;
+    private boolean gestureConsumed = false;
+    private long lastPinchAtMs = 0L;
     private ScaleGestureDetector scaleGestureDetector;
     private int videoQualityMode = 0;
     private int fpsMode = 0;
@@ -170,7 +169,9 @@ public class MainActivity extends Activity implements SurfaceHolder.Callback {
         scaleGestureDetector = new ScaleGestureDetector(this, new ScaleGestureDetector.SimpleOnScaleGestureListener() {
             @Override
             public boolean onScale(ScaleGestureDetector detector) {
-                pinchHappened = true;
+                gestureConsumed = true;
+                lastPinchAtMs = System.currentTimeMillis();
+                showZoomSlider();
                 if (detector.getScaleFactor() > 1.03f) {
                     changeZoom(1);
                 } else if (detector.getScaleFactor() < 0.97f) {
@@ -232,8 +233,8 @@ public class MainActivity extends Activity implements SurfaceHolder.Callback {
         FrameLayout controls = new FrameLayout(this);
         controls.setPadding(dp(8), dp(6), dp(8), dp(6));
         controls.setBackground(makeCapsuleBackground());
-        controls.setElevation(dp(16));
-        controls.setTranslationZ(dp(10));
+        controls.setElevation(dp(22));
+        controls.setTranslationZ(dp(14));
 
         HorizontalScrollView scrollView = new HorizontalScrollView(this);
         scrollView.setHorizontalScrollBarEnabled(false);
@@ -253,14 +254,6 @@ public class MainActivity extends Activity implements SurfaceHolder.Callback {
         });
         switchButton = capsuleActionButton("VIRAR", this::switchCamera);
         flashButton = capsuleActionButton("FLASH", this::toggleFlash);
-        zoomOutButton = capsuleActionButton("ZOOM -", () -> {
-            showZoomSlider();
-            changeZoom(-1);
-        });
-        zoomInButton = capsuleActionButton("ZOOM +", () -> {
-            showZoomSlider();
-            changeZoom(1);
-        });
         exposureDownButton = capsuleActionButton("EV -", () -> changeExposure(-1));
         focusButton = capsuleActionButton("FOCO", this::triggerAutoFocus);
         exposureUpButton = capsuleActionButton("EV +", () -> changeExposure(1));
@@ -270,8 +263,6 @@ public class MainActivity extends Activity implements SurfaceHolder.Callback {
         actionsRow.addView(videoModeButton);
         actionsRow.addView(switchButton);
         actionsRow.addView(flashButton);
-        actionsRow.addView(zoomOutButton);
-        actionsRow.addView(zoomInButton);
         actionsRow.addView(exposureDownButton);
         actionsRow.addView(focusButton);
         actionsRow.addView(exposureUpButton);
@@ -292,12 +283,12 @@ public class MainActivity extends Activity implements SurfaceHolder.Callback {
 
         FrameLayout.LayoutParams controlsParams = new FrameLayout.LayoutParams(
                 FrameLayout.LayoutParams.MATCH_PARENT,
-                dp(58),
+                dp(60),
                 Gravity.BOTTOM | Gravity.CENTER_HORIZONTAL
         );
         controlsParams.leftMargin = dp(18);
         controlsParams.rightMargin = dp(18);
-        controlsParams.bottomMargin = dp(12);
+        controlsParams.bottomMargin = dp(14);
         root.addView(controls, controlsParams);
 
         settingsPanel = buildVideoSettingsPanel();
@@ -315,14 +306,26 @@ public class MainActivity extends Activity implements SurfaceHolder.Callback {
             case MotionEvent.ACTION_DOWN:
                 touchStartX = event.getX();
                 touchStartY = event.getY();
-                pinchHappened = false;
+                gestureConsumed = event.getPointerCount() > 1;
+                return true;
+            case MotionEvent.ACTION_POINTER_DOWN:
+            case MotionEvent.ACTION_MOVE:
+                if (event.getPointerCount() > 1) {
+                    gestureConsumed = true;
+                    lastPinchAtMs = System.currentTimeMillis();
+                }
                 return true;
             case MotionEvent.ACTION_UP:
                 float dx = Math.abs(event.getX() - touchStartX);
                 float dy = Math.abs(event.getY() - touchStartY);
-                if (!pinchHappened && dx < dp(18) && dy < dp(18)) {
+                boolean recentPinch = System.currentTimeMillis() - lastPinchAtMs < 650;
+                if (!gestureConsumed && !recentPinch && dx < dp(18) && dy < dp(18)) {
                     takePhoto();
                 }
+                gestureConsumed = false;
+                return true;
+            case MotionEvent.ACTION_CANCEL:
+                gestureConsumed = false;
                 return true;
             default:
                 return true;
@@ -332,11 +335,11 @@ public class MainActivity extends Activity implements SurfaceHolder.Callback {
     private Button capsuleActionButton(String label, Runnable action) {
         Button button = new Button(this);
         button.setText(label);
-        button.setTextColor(Color.WHITE);
+        button.setTextColor(0xFF111111);
         button.setTextSize(12f);
         button.setTypeface(Typeface.DEFAULT_BOLD);
         button.setAllCaps(false);
-        button.setMinWidth(dp(74));
+        button.setMinWidth(dp(78));
         button.setMinHeight(dp(42));
         button.setPadding(dp(10), 0, dp(10), 0);
         button.setBackground(makeButtonBackground(false));
@@ -359,8 +362,9 @@ public class MainActivity extends Activity implements SurfaceHolder.Callback {
 
     private void applyModeButtonState(Button button, boolean selected) {
         if (button == null) return;
+        button.setTextColor(selected ? 0xFF050510 : 0xFF181818);
         button.setBackground(makeButtonBackground(selected));
-        button.setElevation(selected ? dp(10) : dp(3));
+        button.setElevation(selected ? dp(12) : dp(3));
         button.setTranslationZ(selected ? dp(7) : dp(1));
         button.setScaleX(selected ? 1.05f : 1f);
         button.setScaleY(selected ? 1.05f : 1f);
@@ -510,22 +514,22 @@ public class MainActivity extends Activity implements SurfaceHolder.Callback {
     private GradientDrawable makeCapsuleBackground() {
         GradientDrawable drawable = new GradientDrawable(
                 GradientDrawable.Orientation.TOP_BOTTOM,
-                new int[]{0x76222222, 0x66101010}
+                new int[]{0xF2FFFFFF, 0xDDEFEFEF}
         );
-        drawable.setCornerRadius(dp(24));
-        drawable.setStroke(dp(1), 0x08FFFFFF);
+        drawable.setCornerRadius(dp(30));
+        drawable.setStroke(dp(1), 0x55FFFFFF);
         return drawable;
     }
 
     private GradientDrawable makeButtonBackground(boolean selected) {
-        int top = selected ? 0xEE5A5A5A : 0x30333333;
-        int bottom = selected ? 0xDD303030 : 0x24101010;
+        int top = selected ? 0xFFE8E8E8 : 0x20FFFFFF;
+        int bottom = selected ? 0xFFD6D6D6 : 0x10FFFFFF;
         GradientDrawable drawable = new GradientDrawable(
                 GradientDrawable.Orientation.TOP_BOTTOM,
                 new int[]{top, bottom}
         );
-        drawable.setCornerRadius(dp(18));
-        drawable.setStroke(dp(1), selected ? 0x22FFFFFF : 0x05FFFFFF);
+        drawable.setCornerRadius(dp(24));
+        drawable.setStroke(dp(1), selected ? 0xFFFFFFFF : 0x22FFFFFF);
         return drawable;
     }
 
@@ -534,8 +538,8 @@ public class MainActivity extends Activity implements SurfaceHolder.Callback {
                 GradientDrawable.Orientation.TOP_BOTTOM,
                 new int[]{0xEEFF4B4B, 0xEEB00020}
         );
-        drawable.setCornerRadius(dp(18));
-        drawable.setStroke(dp(1), 0x66FF6B6B);
+        drawable.setCornerRadius(dp(24));
+        drawable.setStroke(dp(1), 0x44FF6B6B);
         return drawable;
     }
 
@@ -717,6 +721,7 @@ public class MainActivity extends Activity implements SurfaceHolder.Callback {
             recording = true;
             if (videoModeButton != null) {
                 videoModeButton.setText("PARAR");
+                videoModeButton.setTextColor(Color.WHITE);
                 videoModeButton.setBackground(makeRecordingButtonBackground());
                 videoModeButton.setElevation(dp(10));
             }
@@ -829,7 +834,7 @@ public class MainActivity extends Activity implements SurfaceHolder.Callback {
         zoomValue = 0;
         exposureValue = 0;
         torchEnabled = false;
-        flashButton.setText("Flash");
+        flashButton.setText("FLASH");
         openCameraWhenReady();
     }
 
@@ -837,7 +842,7 @@ public class MainActivity extends Activity implements SurfaceHolder.Callback {
         if (camera == null) return;
         torchEnabled = !torchEnabled;
         applyHighQualityParameters(false);
-        flashButton.setText(torchEnabled ? "Flash ON" : "Flash");
+        flashButton.setText(torchEnabled ? "FLASH ON" : "FLASH");
     }
 
     private void changeZoom(int delta) {
