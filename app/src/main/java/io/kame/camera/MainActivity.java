@@ -48,6 +48,9 @@ public class MainActivity extends Activity implements SurfaceHolder.Callback {
     private Button flashButton;
     private Button zoomInButton;
     private Button zoomOutButton;
+    private Button exposureDownButton;
+    private Button focusButton;
+    private Button exposureUpButton;
 
     private Camera camera;
     private SurfaceHolder surfaceHolder;
@@ -60,6 +63,7 @@ public class MainActivity extends Activity implements SurfaceHolder.Callback {
     private boolean recording = false;
     private boolean torchEnabled = false;
     private int zoomValue = 0;
+    private int exposureValue = 0;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -141,6 +145,7 @@ public class MainActivity extends Activity implements SurfaceHolder.Callback {
         root.setBackgroundColor(Color.BLACK);
 
         surfaceView = new SurfaceView(this);
+        surfaceView.setOnClickListener(view -> triggerAutoFocus());
         surfaceHolder = surfaceView.getHolder();
         surfaceHolder.addCallback(this);
         root.addView(surfaceView, new FrameLayout.LayoutParams(
@@ -163,7 +168,7 @@ public class MainActivity extends Activity implements SurfaceHolder.Callback {
         LinearLayout controls = new LinearLayout(this);
         controls.setOrientation(LinearLayout.VERTICAL);
         controls.setGravity(Gravity.CENTER);
-        controls.setPadding(dp(14), dp(14), dp(14), dp(14));
+        controls.setPadding(dp(12), dp(12), dp(12), dp(12));
         controls.setBackground(makeCardBackground());
         controls.setElevation(dp(14));
         controls.setTranslationZ(dp(8));
@@ -176,8 +181,15 @@ public class MainActivity extends Activity implements SurfaceHolder.Callback {
         ));
         LinearLayout row2 = new LinearLayout(this);
         row2.setGravity(Gravity.CENTER);
-        row2.setPadding(0, dp(8), 0, 0);
+        row2.setPadding(0, dp(6), 0, 0);
         row2.setLayoutParams(new LinearLayout.LayoutParams(
+                LinearLayout.LayoutParams.MATCH_PARENT,
+                LinearLayout.LayoutParams.WRAP_CONTENT
+        ));
+        LinearLayout row3 = new LinearLayout(this);
+        row3.setGravity(Gravity.CENTER);
+        row3.setPadding(0, dp(6), 0, 0);
+        row3.setLayoutParams(new LinearLayout.LayoutParams(
                 LinearLayout.LayoutParams.MATCH_PARENT,
                 LinearLayout.LayoutParams.WRAP_CONTENT
         ));
@@ -188,6 +200,9 @@ public class MainActivity extends Activity implements SurfaceHolder.Callback {
         flashButton = cameraButton("FLASH", this::toggleFlash);
         zoomOutButton = cameraButton("ZOOM -", () -> changeZoom(-1));
         zoomInButton = cameraButton("ZOOM +", () -> changeZoom(1));
+        exposureDownButton = cameraButton("EV -", () -> changeExposure(-1));
+        focusButton = cameraButton("FOCO", this::triggerAutoFocus);
+        exposureUpButton = cameraButton("EV +", () -> changeExposure(1));
 
         row1.addView(photoButton);
         row1.addView(videoButton);
@@ -195,8 +210,12 @@ public class MainActivity extends Activity implements SurfaceHolder.Callback {
         row2.addView(flashButton);
         row2.addView(zoomOutButton);
         row2.addView(zoomInButton);
+        row3.addView(exposureDownButton);
+        row3.addView(focusButton);
+        row3.addView(exposureUpButton);
         controls.addView(row1);
         controls.addView(row2);
+        controls.addView(row3);
 
         FrameLayout.LayoutParams controlsParams = new FrameLayout.LayoutParams(
                 FrameLayout.LayoutParams.MATCH_PARENT,
@@ -205,7 +224,7 @@ public class MainActivity extends Activity implements SurfaceHolder.Callback {
         );
         controlsParams.leftMargin = dp(18);
         controlsParams.rightMargin = dp(18);
-        controlsParams.bottomMargin = dp(86);
+        controlsParams.bottomMargin = dp(34);
         root.addView(controls, controlsParams);
 
         setContentView(root);
@@ -219,12 +238,12 @@ public class MainActivity extends Activity implements SurfaceHolder.Callback {
         button.setTypeface(Typeface.DEFAULT_BOLD);
         button.setAllCaps(false);
         button.setMinWidth(dp(96));
-        button.setMinHeight(dp(54));
-        button.setPadding(dp(8), 0, dp(8), 0);
+        button.setMinHeight(dp(50));
+        button.setPadding(dp(6), 0, dp(6), 0);
         button.setBackground(makeButtonBackground());
         button.setElevation(dp(6));
         button.setTranslationZ(dp(3));
-        LinearLayout.LayoutParams params = new LinearLayout.LayoutParams(0, dp(56), 1f);
+        LinearLayout.LayoutParams params = new LinearLayout.LayoutParams(0, dp(52), 1f);
         params.leftMargin = dp(4);
         params.rightMargin = dp(4);
         button.setLayoutParams(params);
@@ -309,6 +328,13 @@ public class MainActivity extends Activity implements SurfaceHolder.Callback {
             if (parameters.isZoomSupported()) {
                 zoomValue = Math.max(0, Math.min(zoomValue, parameters.getMaxZoom()));
                 parameters.setZoom(zoomValue);
+            }
+
+            int minExposure = parameters.getMinExposureCompensation();
+            int maxExposure = parameters.getMaxExposureCompensation();
+            if (minExposure != 0 || maxExposure != 0) {
+                exposureValue = Math.max(minExposure, Math.min(maxExposure, exposureValue));
+                parameters.setExposureCompensation(exposureValue);
             }
 
             List<String> flashModes = parameters.getSupportedFlashModes();
@@ -479,6 +505,7 @@ public class MainActivity extends Activity implements SurfaceHolder.Callback {
         releaseCamera();
         cameraId = next;
         zoomValue = 0;
+        exposureValue = 0;
         torchEnabled = false;
         flashButton.setText("Flash");
         openCameraWhenReady();
@@ -505,6 +532,35 @@ public class MainActivity extends Activity implements SurfaceHolder.Callback {
             status("Zoom: passo " + zoomValue + " de " + parameters.getMaxZoom());
         } catch (Exception error) {
             status("Erro no zoom: " + error.getMessage());
+        }
+    }
+
+    private void changeExposure(int delta) {
+        if (camera == null) return;
+        try {
+            Camera.Parameters parameters = camera.getParameters();
+            int min = parameters.getMinExposureCompensation();
+            int max = parameters.getMaxExposureCompensation();
+            if (min == 0 && max == 0) {
+                toast("Exposição manual não suportada neste sensor.");
+                return;
+            }
+            exposureValue = Math.max(min, Math.min(max, exposureValue + delta));
+            parameters.setExposureCompensation(exposureValue);
+            camera.setParameters(parameters);
+            status("Exposição: " + exposureValue + " de " + min + " a " + max);
+        } catch (Exception error) {
+            status("Erro na exposição: " + error.getMessage());
+        }
+    }
+
+    private void triggerAutoFocus() {
+        if (camera == null || recording) return;
+        try {
+            camera.cancelAutoFocus();
+            camera.autoFocus((success, cam) -> status(success ? "Foco ajustado" : "Foco automático não confirmou"));
+        } catch (Exception error) {
+            status("Foco indisponível: " + error.getMessage());
         }
     }
 
