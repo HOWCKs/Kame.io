@@ -52,6 +52,10 @@ public class MainActivity extends Activity implements SurfaceHolder.Callback {
     private Button exposureDownButton;
     private Button focusButton;
     private Button exposureUpButton;
+    private Button settingsButton;
+    private Button qualitySettingButton;
+    private Button bitrateSettingButton;
+    private FrameLayout settingsPanel;
 
     private Camera camera;
     private SurfaceHolder surfaceHolder;
@@ -66,6 +70,8 @@ public class MainActivity extends Activity implements SurfaceHolder.Callback {
     private boolean videoMode = false;
     private int zoomValue = 0;
     private int exposureValue = 0;
+    private int videoQualityMode = 0;
+    private boolean boostedBitrate = false;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -162,6 +168,7 @@ public class MainActivity extends Activity implements SurfaceHolder.Callback {
         statusText.setTextSize(14f);
         statusText.setPadding(24, 30, 24, 12);
         statusText.setShadowLayer(4f, 0f, 2f, Color.BLACK);
+        statusText.setVisibility(View.GONE);
         root.addView(statusText, new FrameLayout.LayoutParams(
                 FrameLayout.LayoutParams.MATCH_PARENT,
                 FrameLayout.LayoutParams.WRAP_CONTENT,
@@ -197,6 +204,7 @@ public class MainActivity extends Activity implements SurfaceHolder.Callback {
         exposureDownButton = capsuleActionButton("EV -", () -> changeExposure(-1));
         focusButton = capsuleActionButton("FOCO", this::triggerAutoFocus);
         exposureUpButton = capsuleActionButton("EV +", () -> changeExposure(1));
+        settingsButton = capsuleActionButton("⚙", this::openVideoSettings);
 
         actionsRow.addView(photoModeButton);
         actionsRow.addView(videoModeButton);
@@ -207,6 +215,7 @@ public class MainActivity extends Activity implements SurfaceHolder.Callback {
         actionsRow.addView(exposureDownButton);
         actionsRow.addView(focusButton);
         actionsRow.addView(exposureUpButton);
+        actionsRow.addView(settingsButton);
         scrollView.addView(actionsRow, new HorizontalScrollView.LayoutParams(
                 HorizontalScrollView.LayoutParams.WRAP_CONTENT,
                 HorizontalScrollView.LayoutParams.WRAP_CONTENT
@@ -230,6 +239,12 @@ public class MainActivity extends Activity implements SurfaceHolder.Callback {
         controlsParams.rightMargin = dp(18);
         controlsParams.bottomMargin = dp(12);
         root.addView(controls, controlsParams);
+
+        settingsPanel = buildVideoSettingsPanel();
+        root.addView(settingsPanel, new FrameLayout.LayoutParams(
+                FrameLayout.LayoutParams.MATCH_PARENT,
+                FrameLayout.LayoutParams.MATCH_PARENT
+        ));
 
         setContentView(root);
     }
@@ -257,9 +272,127 @@ public class MainActivity extends Activity implements SurfaceHolder.Callback {
 
     private void setVideoMode(boolean enabled) {
         videoMode = enabled;
-        if (photoModeButton != null) photoModeButton.setBackground(makeButtonBackground(!enabled));
-        if (videoModeButton != null) videoModeButton.setBackground(makeButtonBackground(enabled));
-        status(enabled ? "Modo vídeo • toque em VÍDEO para iniciar/parar" : "Modo foto • toque em FOTO para fotografar");
+        applyModeButtonState(photoModeButton, !enabled);
+        applyModeButtonState(videoModeButton, enabled);
+        status(enabled ? "Modo vídeo" : "Modo foto");
+    }
+
+    private void applyModeButtonState(Button button, boolean selected) {
+        if (button == null) return;
+        button.setBackground(makeButtonBackground(selected));
+        button.setElevation(selected ? dp(10) : dp(3));
+        button.setTranslationZ(selected ? dp(7) : dp(1));
+        button.setScaleX(selected ? 1.05f : 1f);
+        button.setScaleY(selected ? 1.05f : 1f);
+    }
+
+    private FrameLayout buildVideoSettingsPanel() {
+        FrameLayout overlay = new FrameLayout(this);
+        overlay.setBackgroundColor(0x99000000);
+        overlay.setVisibility(View.GONE);
+        overlay.setOnClickListener(view -> closeVideoSettings());
+
+        LinearLayout card = new LinearLayout(this);
+        card.setOrientation(LinearLayout.VERTICAL);
+        card.setPadding(dp(20), dp(18), dp(20), dp(18));
+        card.setBackground(makeSettingsCardBackground());
+        card.setElevation(dp(18));
+        card.setTranslationZ(dp(12));
+        card.setOnClickListener(view -> { });
+
+        TextView title = new TextView(this);
+        title.setText("Configurações de vídeo");
+        title.setTextColor(Color.WHITE);
+        title.setTextSize(18f);
+        title.setTypeface(Typeface.DEFAULT_BOLD);
+        title.setGravity(Gravity.CENTER);
+        title.setPadding(0, 0, 0, dp(12));
+        card.addView(title, new LinearLayout.LayoutParams(
+                LinearLayout.LayoutParams.MATCH_PARENT,
+                LinearLayout.LayoutParams.WRAP_CONTENT
+        ));
+
+        qualitySettingButton = settingsOptionButton("", this::cycleVideoQuality);
+        bitrateSettingButton = settingsOptionButton("", this::toggleBoostedBitrate);
+        Button closeButton = settingsOptionButton("FECHAR", this::closeVideoSettings);
+        card.addView(qualitySettingButton);
+        card.addView(bitrateSettingButton);
+        card.addView(closeButton);
+        updateVideoSettingsLabels();
+
+        FrameLayout.LayoutParams cardParams = new FrameLayout.LayoutParams(
+                FrameLayout.LayoutParams.MATCH_PARENT,
+                FrameLayout.LayoutParams.WRAP_CONTENT,
+                Gravity.BOTTOM | Gravity.CENTER_HORIZONTAL
+        );
+        cardParams.leftMargin = dp(22);
+        cardParams.rightMargin = dp(22);
+        cardParams.bottomMargin = dp(96);
+        overlay.addView(card, cardParams);
+        return overlay;
+    }
+
+    private Button settingsOptionButton(String label, Runnable action) {
+        Button button = new Button(this);
+        button.setText(label);
+        button.setTextColor(Color.WHITE);
+        button.setTextSize(14f);
+        button.setTypeface(Typeface.DEFAULT_BOLD);
+        button.setAllCaps(false);
+        button.setPadding(dp(12), 0, dp(12), 0);
+        button.setBackground(makeButtonBackground(false));
+        button.setOnClickListener(view -> action.run());
+        LinearLayout.LayoutParams params = new LinearLayout.LayoutParams(
+                LinearLayout.LayoutParams.MATCH_PARENT,
+                dp(48)
+        );
+        params.topMargin = dp(8);
+        button.setLayoutParams(params);
+        return button;
+    }
+
+    private void openVideoSettings() {
+        updateVideoSettingsLabels();
+        if (settingsPanel != null) settingsPanel.setVisibility(View.VISIBLE);
+    }
+
+    private void closeVideoSettings() {
+        if (settingsPanel != null) settingsPanel.setVisibility(View.GONE);
+        enableImmersiveMode();
+    }
+
+    private void cycleVideoQuality() {
+        videoQualityMode = (videoQualityMode + 1) % 4;
+        updateVideoSettingsLabels();
+    }
+
+    private void toggleBoostedBitrate() {
+        boostedBitrate = !boostedBitrate;
+        updateVideoSettingsLabels();
+    }
+
+    private void updateVideoSettingsLabels() {
+        if (qualitySettingButton != null) qualitySettingButton.setText("Qualidade: " + videoQualityLabel());
+        if (bitrateSettingButton != null) bitrateSettingButton.setText("Bitrate: " + (boostedBitrate ? "REFORÇADO" : "NORMAL"));
+    }
+
+    private String videoQualityLabel() {
+        switch (videoQualityMode) {
+            case 1: return "4K se suportado";
+            case 2: return "Full HD 1080p";
+            case 3: return "HD 720p";
+            default: return "Automática máxima";
+        }
+    }
+
+    private GradientDrawable makeSettingsCardBackground() {
+        GradientDrawable drawable = new GradientDrawable(
+                GradientDrawable.Orientation.TOP_BOTTOM,
+                new int[]{0xDD2F3842, 0xEE101820}
+        );
+        drawable.setCornerRadius(dp(28));
+        drawable.setStroke(dp(1), 0x88FFFFFF);
+        return drawable;
     }
 
     private GradientDrawable makeCapsuleBackground() {
@@ -281,6 +414,16 @@ public class MainActivity extends Activity implements SurfaceHolder.Callback {
         );
         drawable.setCornerRadius(dp(22));
         drawable.setStroke(dp(1), selected ? 0xBBFFFFFF : 0x55FFFFFF);
+        return drawable;
+    }
+
+    private GradientDrawable makeRecordingButtonBackground() {
+        GradientDrawable drawable = new GradientDrawable(
+                GradientDrawable.Orientation.TOP_BOTTOM,
+                new int[]{0xEEFF4B4B, 0xEEB00020}
+        );
+        drawable.setCornerRadius(dp(22));
+        drawable.setStroke(dp(1), 0xCCFFFFFF);
         return drawable;
     }
 
@@ -417,6 +560,10 @@ public class MainActivity extends Activity implements SurfaceHolder.Callback {
 
             CamcorderProfile profile = getBestProfile();
             mediaRecorder.setProfile(profile);
+            if (boostedBitrate) {
+                int boosted = Math.min(profile.videoBitRate + 12000000, Math.max(profile.videoBitRate, profile.videoBitRate * 3 / 2));
+                mediaRecorder.setVideoEncodingBitRate(boosted);
+            }
             mediaRecorder.setOrientationHint(isFrontCamera(cameraId) ? 270 : 90);
 
             currentVideoUri = createVideoUri();
@@ -428,10 +575,17 @@ public class MainActivity extends Activity implements SurfaceHolder.Callback {
             mediaRecorder.start();
 
             recording = true;
-            if (videoModeButton != null) videoModeButton.setText("PARAR");
+            if (videoModeButton != null) {
+                videoModeButton.setText("PARAR");
+                videoModeButton.setBackground(makeRecordingButtonBackground());
+                videoModeButton.setElevation(dp(10));
+            }
             status("Gravando vídeo em perfil alto...");
         } catch (Exception error) {
-            if (videoModeButton != null) videoModeButton.setText("VÍDEO");
+            if (videoModeButton != null) {
+                videoModeButton.setText("VÍDEO");
+                applyModeButtonState(videoModeButton, videoMode);
+            }
             cleanupRecorder();
             reconnectCameraAfterRecording();
             status("Erro ao gravar: " + error.getMessage());
@@ -447,7 +601,10 @@ public class MainActivity extends Activity implements SurfaceHolder.Callback {
             status("Gravação finalizada com aviso: " + error.getMessage());
         } finally {
             recording = false;
-            if (videoModeButton != null) videoModeButton.setText("VÍDEO");
+            if (videoModeButton != null) {
+                videoModeButton.setText("VÍDEO");
+                applyModeButtonState(videoModeButton, videoMode);
+            }
             cleanupRecorder();
             reconnectCameraAfterRecording();
         }
@@ -492,12 +649,21 @@ public class MainActivity extends Activity implements SurfaceHolder.Callback {
     }
 
     private CamcorderProfile getBestProfile() {
-        int[] qualities = new int[]{
-                CamcorderProfile.QUALITY_2160P,
-                CamcorderProfile.QUALITY_1080P,
-                CamcorderProfile.QUALITY_720P,
-                CamcorderProfile.QUALITY_HIGH
-        };
+        int[] qualities;
+        switch (videoQualityMode) {
+            case 1:
+                qualities = new int[]{CamcorderProfile.QUALITY_2160P, CamcorderProfile.QUALITY_1080P, CamcorderProfile.QUALITY_HIGH};
+                break;
+            case 2:
+                qualities = new int[]{CamcorderProfile.QUALITY_1080P, CamcorderProfile.QUALITY_720P, CamcorderProfile.QUALITY_HIGH};
+                break;
+            case 3:
+                qualities = new int[]{CamcorderProfile.QUALITY_720P, CamcorderProfile.QUALITY_HIGH};
+                break;
+            default:
+                qualities = new int[]{CamcorderProfile.QUALITY_2160P, CamcorderProfile.QUALITY_1080P, CamcorderProfile.QUALITY_720P, CamcorderProfile.QUALITY_HIGH};
+                break;
+        }
         for (int quality : qualities) {
             if (CamcorderProfile.hasProfile(cameraId, quality)) {
                 return CamcorderProfile.get(cameraId, quality);
