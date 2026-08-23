@@ -10,7 +10,6 @@ import android.graphics.Typeface;
 import android.graphics.drawable.GradientDrawable;
 import android.hardware.Camera;
 import android.media.CamcorderProfile;
-import android.media.ExifInterface;
 import android.media.MediaRecorder;
 import android.net.Uri;
 import android.os.Build;
@@ -392,8 +391,8 @@ public class MainActivity extends Activity implements SurfaceHolder.Callback {
 
     private void updateVideoSettingsLabels() {
         if (qualitySettingButton != null) qualitySettingButton.setText("Qualidade: " + videoQualityLabel());
-        if (bitrateSettingButton != null) bitrateSettingButton.setText("Bitrate: " + (boostedBitrate ? "REFORÇADO" : "NORMAL"));
-        if (fpsSettingButton != null) fpsSettingButton.setText("FPS: " + fpsLabel());
+        if (bitrateSettingButton != null) bitrateSettingButton.setText("Bitrate: " + (boostedBitrate ? "REFORÇADO (teste)" : "NORMAL"));
+        if (fpsSettingButton != null) fpsSettingButton.setText("FPS: " + fpsLabel() + " (seguro)");
         if (stabilizationSettingButton != null) stabilizationSettingButton.setText("Estabilização: " + (videoStabilizationEnabled ? "ON" : "OFF"));
     }
 
@@ -425,32 +424,32 @@ public class MainActivity extends Activity implements SurfaceHolder.Callback {
     private GradientDrawable makeSettingsCardBackground() {
         GradientDrawable drawable = new GradientDrawable(
                 GradientDrawable.Orientation.TOP_BOTTOM,
-                new int[]{0xDD2F3842, 0xEE101820}
+                new int[]{0xEE252525, 0xF0111111}
         );
-        drawable.setCornerRadius(dp(28));
-        drawable.setStroke(dp(1), 0x26FFFFFF);
+        drawable.setCornerRadius(dp(26));
+        drawable.setStroke(dp(1), 0x12FFFFFF);
         return drawable;
     }
 
     private GradientDrawable makeCapsuleBackground() {
         GradientDrawable drawable = new GradientDrawable(
                 GradientDrawable.Orientation.TOP_BOTTOM,
-                new int[]{0x5A3B434A, 0x44101820}
+                new int[]{0x76222222, 0x66101010}
         );
-        drawable.setCornerRadius(dp(26));
-        drawable.setStroke(dp(1), 0x10FFFFFF);
+        drawable.setCornerRadius(dp(24));
+        drawable.setStroke(dp(1), 0x08FFFFFF);
         return drawable;
     }
 
     private GradientDrawable makeButtonBackground(boolean selected) {
-        int top = selected ? 0xEE2A7DE6 : 0x333A4652;
-        int bottom = selected ? 0xDD003D8F : 0x24101820;
+        int top = selected ? 0xEE5A5A5A : 0x30333333;
+        int bottom = selected ? 0xDD303030 : 0x24101010;
         GradientDrawable drawable = new GradientDrawable(
                 GradientDrawable.Orientation.TOP_BOTTOM,
                 new int[]{top, bottom}
         );
         drawable.setCornerRadius(dp(18));
-        drawable.setStroke(dp(1), selected ? 0x663D9DFF : 0x08FFFFFF);
+        drawable.setStroke(dp(1), selected ? 0x22FFFFFF : 0x05FFFFFF);
         return drawable;
     }
 
@@ -579,49 +578,11 @@ public class MainActivity extends Activity implements SurfaceHolder.Callback {
                 if (output == null) throw new IllegalStateException("Sem saída para arquivo");
                 output.write(data);
             }
-            writePhotoExifMetadata(uri);
             status("Foto salva: " + name);
             toast("Foto salva na galeria");
         } catch (Exception error) {
             status("Erro ao salvar foto: " + error.getMessage());
         }
-    }
-
-    private void writePhotoExifMetadata(Uri uri) {
-        try (ParcelFileDescriptor descriptor = getContentResolver().openFileDescriptor(uri, "rw")) {
-            if (descriptor == null) return;
-            ExifInterface exif = new ExifInterface(descriptor.getFileDescriptor());
-            String timestamp = new SimpleDateFormat("yyyy:MM:dd HH:mm:ss", Locale.US).format(new Date());
-            exif.setAttribute(ExifInterface.TAG_SOFTWARE, "Kame Camera 0.1.0-alpha");
-            exif.setAttribute(ExifInterface.TAG_MAKE, Build.MANUFACTURER);
-            exif.setAttribute(ExifInterface.TAG_MODEL, Build.MODEL);
-            exif.setAttribute(ExifInterface.TAG_DATETIME, timestamp);
-            exif.setAttribute(ExifInterface.TAG_DATETIME_ORIGINAL, timestamp);
-            exif.setAttribute(ExifInterface.TAG_IMAGE_DESCRIPTION, buildPhotoMetadataSummary());
-            exif.setAttribute(ExifInterface.TAG_USER_COMMENT, buildPhotoMetadataSummary());
-            exif.saveAttributes();
-        } catch (Exception ignored) {
-            // Metadados EXIF são melhoria extra; a foto não deve falhar se algum aparelho recusar edição.
-        }
-    }
-
-    private String buildPhotoMetadataSummary() {
-        String pictureSize = "desconhecida";
-        try {
-            if (camera != null) {
-                Camera.Size size = camera.getParameters().getPictureSize();
-                if (size != null) pictureSize = size.width + "x" + size.height;
-            }
-        } catch (Exception ignored) {
-        }
-        return "App=Kame Camera; Foto=JPEG 100%; Resolucao=" + pictureSize
-                + "; CameraId=" + cameraId
-                + "; ZoomStep=" + zoomValue
-                + "; ExposicaoEVStep=" + exposureValue
-                + "; VideoQualidadeAtual=" + videoQualityLabel()
-                + "; VideoFPSAtual=" + fpsLabel()
-                + "; VideoBitrate=" + (boostedBitrate ? "REFORCADO" : "NORMAL")
-                + "; VideoEstabilizacao=" + (videoStabilizationEnabled ? "ON" : "OFF");
     }
 
     private void toggleVideo() {
@@ -641,14 +602,8 @@ public class MainActivity extends Activity implements SurfaceHolder.Callback {
 
             CamcorderProfile profile = getBestProfile();
             mediaRecorder.setProfile(profile);
-            if (boostedBitrate) {
-                int boosted = Math.min(profile.videoBitRate + 12000000, Math.max(profile.videoBitRate, profile.videoBitRate * 3 / 2));
-                mediaRecorder.setVideoEncodingBitRate(boosted);
-            }
-            int fps = selectedFps();
-            if (fps > 0 && isFpsSupported(fps)) {
-                mediaRecorder.setVideoFrameRate(fps);
-            }
+            // Mantemos bitrate e FPS no perfil nativo para evitar arquivos quebrados em aparelhos
+            // que rejeitam combinações manuais. As opções continuam no menu para evolução gradual.
             mediaRecorder.setOrientationHint(isFrontCamera(cameraId) ? 270 : 90);
 
             currentVideoUri = createVideoUri();
@@ -733,22 +688,6 @@ public class MainActivity extends Activity implements SurfaceHolder.Callback {
         Uri uri = getContentResolver().insert(MediaStore.Video.Media.EXTERNAL_CONTENT_URI, values);
         if (uri == null) throw new IllegalStateException("MediaStore sem URI para vídeo");
         return uri;
-    }
-
-    private boolean isFpsSupported(int fps) {
-        try {
-            if (camera == null) return false;
-            List<int[]> ranges = camera.getParameters().getSupportedPreviewFpsRange();
-            int target = fps * 1000;
-            if (ranges == null) return false;
-            for (int[] range : ranges) {
-                if (range != null && range.length >= 2 && range[0] <= target && range[1] >= target) {
-                    return true;
-                }
-            }
-        } catch (Exception ignored) {
-        }
-        return false;
     }
 
     private CamcorderProfile getBestProfile() {
