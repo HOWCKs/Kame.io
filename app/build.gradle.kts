@@ -29,15 +29,3 @@ android {
         targetCompatibility = JavaVersion.VERSION_17
     }
 }
-
-val cameraxVersion = "1.4.1"
-
-dependencies {
-    implementation("androidx.activity:activity:1.10.0")
-    implementation("androidx.core:core:1.15.0")
-    implementation("androidx.camera:camera-core:$cameraxVersion")
-    implementation("androidx.camera:camera-camera2:$cameraxVersion")
-    implementation("androidx.camera:camera-lifecycle:$cameraxVersion")
-    implementation("androidx.camera:camera-view:$cameraxVersion")
-    implementation("androidx.camera:camera-video:$cameraxVersion")
-}
