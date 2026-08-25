@@ -9,7 +9,10 @@ import android.content.res.Configuration;
 import android.content.pm.PackageManager;
 import android.graphics.Color;
 import android.graphics.Typeface;
+import android.graphics.drawable.Drawable;
 import android.graphics.drawable.GradientDrawable;
+import android.graphics.drawable.InsetDrawable;
+import android.graphics.drawable.LayerDrawable;
 import android.hardware.Camera;
 import android.media.CamcorderProfile;
 import android.media.MediaRecorder;
@@ -258,15 +261,15 @@ public class MainActivity extends Activity implements SurfaceHolder.Callback {
         actionsRow.setPadding(dp(8), 0, dp(8), 0);
 
         shutterButton = shutterButton();
-        videoModeButton = capsuleActionButton("VÍDEO", () -> {
+        videoModeButton = capsuleActionButton("▶  VÍDEO", () -> {
             setVideoMode(true);
             toggleVideo();
         });
-        switchButton = capsuleActionButton("VIRAR", this::switchCamera);
-        flashButton = capsuleActionButton("FLASH", this::toggleFlash);
-        exposureDownButton = capsuleActionButton("EV -", () -> changeExposure(-1));
-        focusButton = capsuleActionButton("FOCO", this::triggerAutoFocus);
-        exposureUpButton = capsuleActionButton("EV +", () -> changeExposure(1));
+        switchButton = capsuleActionButton("↻  VIRAR", this::switchCamera);
+        flashButton = capsuleActionButton("ϟ  FLASH", this::toggleFlash);
+        exposureDownButton = capsuleActionButton("−  EV", () -> changeExposure(-1));
+        focusButton = capsuleActionButton("⌖  FOCO", this::triggerAutoFocus);
+        exposureUpButton = capsuleActionButton("+  EV", () -> changeExposure(1));
         settingsButton = capsuleActionButton("⚙", this::openVideoSettings);
 
         actionsRow.addView(videoModeButton);
@@ -351,16 +354,18 @@ public class MainActivity extends Activity implements SurfaceHolder.Callback {
         Button button = new Button(this);
         button.setText(label);
         button.setTextColor(isDarkMode() ? Color.WHITE : 0xFF111111);
-        button.setTextSize(12f);
+        button.setTextSize(12.5f);
         button.setTypeface(Typeface.DEFAULT_BOLD);
         button.setAllCaps(false);
-        button.setMinWidth(dp(86));
-        button.setMinHeight(dp(46));
-        button.setPadding(dp(12), 0, dp(12), dp(1));
+        button.setLetterSpacing(0.03f);
+        button.setShadowLayer(isDarkMode() ? 3f : 1.5f, 0f, 1f, isDarkMode() ? 0xAA000000 : 0x33FFFFFF);
+        button.setMinWidth(dp(96));
+        button.setMinHeight(dp(48));
+        button.setPadding(dp(14), 0, dp(14), dp(1));
         button.setBackground(makeButtonBackground(false));
-        button.setElevation(dp(3));
-        button.setTranslationZ(dp(1));
-        LinearLayout.LayoutParams params = new LinearLayout.LayoutParams(LinearLayout.LayoutParams.WRAP_CONTENT, dp(46));
+        button.setElevation(dp(6));
+        button.setTranslationZ(dp(3));
+        LinearLayout.LayoutParams params = new LinearLayout.LayoutParams(LinearLayout.LayoutParams.WRAP_CONTENT, dp(48));
         params.leftMargin = dp(3);
         params.rightMargin = dp(3);
         button.setLayoutParams(params);
@@ -373,12 +378,13 @@ public class MainActivity extends Activity implements SurfaceHolder.Callback {
 
     private Button shutterButton() {
         Button button = new Button(this);
-        button.setText("◎");
-        button.setTextSize(28f);
+        button.setText("◉");
+        button.setTextSize(29f);
         button.setTypeface(Typeface.DEFAULT_BOLD);
         button.setTextColor(isDarkMode() ? Color.WHITE : 0xFF111111);
         button.setAllCaps(false);
         button.setPadding(0, 0, 0, dp(2));
+        button.setShadowLayer(3f, 0f, 1f, isDarkMode() ? 0xAA000000 : 0x55FFFFFF);
         button.setBackground(makeShutterBackground());
         button.setElevation(dp(12));
         button.setTranslationZ(dp(8));
@@ -405,10 +411,10 @@ public class MainActivity extends Activity implements SurfaceHolder.Callback {
             button.setTextColor(selected ? 0xFF050510 : 0xFF181818);
         }
         button.setBackground(makeButtonBackground(selected));
-        button.setElevation(selected ? dp(12) : dp(3));
-        button.setTranslationZ(selected ? dp(7) : dp(1));
-        button.setScaleX(selected ? 1.05f : 1f);
-        button.setScaleY(selected ? 1.05f : 1f);
+        button.setElevation(selected ? dp(16) : dp(6));
+        button.setTranslationZ(selected ? dp(10) : dp(3));
+        button.setScaleX(selected ? 1.06f : 1f);
+        button.setScaleY(selected ? 1.06f : 1f);
     }
 
     private FrameLayout buildVideoSettingsPanel() {
@@ -430,6 +436,8 @@ public class MainActivity extends Activity implements SurfaceHolder.Callback {
         title.setTextColor(isDarkMode() ? Color.WHITE : 0xFF111111);
         title.setTextSize(18f);
         title.setTypeface(Typeface.DEFAULT_BOLD);
+        title.setLetterSpacing(0.02f);
+        title.setShadowLayer(isDarkMode() ? 4f : 2f, 0f, 1f, isDarkMode() ? 0xAA000000 : 0x55FFFFFF);
         title.setGravity(Gravity.CENTER);
         title.setPadding(0, 0, 0, dp(12));
         card.addView(title, new LinearLayout.LayoutParams(
@@ -468,6 +476,8 @@ public class MainActivity extends Activity implements SurfaceHolder.Callback {
         button.setTextSize(14f);
         button.setTypeface(Typeface.DEFAULT_BOLD);
         button.setAllCaps(false);
+        button.setLetterSpacing(0.02f);
+        button.setShadowLayer(isDarkMode() ? 3f : 1.5f, 0f, 1f, isDarkMode() ? 0xAA000000 : 0x44FFFFFF);
         button.setPadding(dp(12), 0, dp(12), 0);
         button.setBackground(makeButtonBackground(false));
         button.setOnClickListener(view -> {
@@ -514,10 +524,10 @@ public class MainActivity extends Activity implements SurfaceHolder.Callback {
     }
 
     private void updateVideoSettingsLabels() {
-        if (qualitySettingButton != null) qualitySettingButton.setText("Qualidade: " + videoQualityLabel());
-        if (bitrateSettingButton != null) bitrateSettingButton.setText("Bitrate: " + (boostedBitrate ? "REFORÇADO (teste)" : "NORMAL"));
-        if (fpsSettingButton != null) fpsSettingButton.setText("FPS: " + fpsLabel() + " (seguro)");
-        if (stabilizationSettingButton != null) stabilizationSettingButton.setText("Estabilização: " + (videoStabilizationEnabled ? "ON" : "OFF"));
+        if (qualitySettingButton != null) qualitySettingButton.setText("▣  Qualidade: " + videoQualityLabel());
+        if (bitrateSettingButton != null) bitrateSettingButton.setText("◇  Bitrate: " + (boostedBitrate ? "REFORÇADO (teste)" : "NORMAL"));
+        if (fpsSettingButton != null) fpsSettingButton.setText("◷  FPS: " + fpsLabel() + " (seguro)");
+        if (stabilizationSettingButton != null) stabilizationSettingButton.setText("◌  Estabilização: " + (videoStabilizationEnabled ? "ON" : "OFF"));
     }
 
     private String videoQualityLabel() {
@@ -564,93 +574,132 @@ public class MainActivity extends Activity implements SurfaceHolder.Callback {
         return drawable;
     }
 
-    private GradientDrawable makeSettingsCardBackground() {
-        GradientDrawable drawable;
-        if (isDarkMode()) {
-            drawable = new GradientDrawable(
-                    GradientDrawable.Orientation.TOP_BOTTOM,
-                    new int[]{0xF0202020, 0xF0101010}
-            );
-            drawable.setStroke(dp(1), 0x12FFFFFF);
-        } else {
-            drawable = new GradientDrawable(
-                    GradientDrawable.Orientation.TOP_BOTTOM,
-                    new int[]{0xF2FFFFFF, 0xEDEFEFEF}
-            );
-            drawable.setStroke(dp(1), 0x44FFFFFF);
-        }
-        drawable.setCornerRadius(dp(30));
-        return drawable;
+    private Drawable makeSettingsCardBackground() {
+        return premiumGlassBackground(dp(30), true, false);
     }
 
-    private GradientDrawable makeCapsuleBackground() {
-        GradientDrawable drawable;
-        if (isDarkMode()) {
-            drawable = new GradientDrawable(
-                    GradientDrawable.Orientation.TOP_BOTTOM,
-                    new int[]{0xEE202020, 0xDD101010}
-            );
-            drawable.setStroke(dp(1), 0x12FFFFFF);
-        } else {
-            drawable = new GradientDrawable(
-                    GradientDrawable.Orientation.TOP_BOTTOM,
-                    new int[]{0xF2FFFFFF, 0xDDEFEFEF}
-            );
-            drawable.setStroke(dp(1), 0x55FFFFFF);
-        }
-        drawable.setCornerRadius(dp(30));
-        return drawable;
+    private Drawable makeCapsuleBackground() {
+        return premiumGlassBackground(dp(32), false, false);
     }
 
-    private GradientDrawable makeButtonBackground(boolean selected) {
-        int top;
-        int bottom;
+    private Drawable makeButtonBackground(boolean selected) {
+        return premiumButtonBackground(selected);
+    }
+
+    private Drawable makeShutterBackground() {
+        return premiumShutterBackground();
+    }
+
+    private Drawable makeRecordingButtonBackground() {
+        GradientDrawable shadow = new GradientDrawable();
+        shadow.setShape(GradientDrawable.RECTANGLE);
+        shadow.setCornerRadius(dp(26));
+        shadow.setColor(0x55000000);
+
+        GradientDrawable glass = new GradientDrawable(
+                GradientDrawable.Orientation.TOP_BOTTOM,
+                new int[]{0xFFFF5454, 0xFFD5002C}
+        );
+        glass.setCornerRadius(dp(26));
+        glass.setStroke(dp(1), 0x66FFFFFF);
+        return new LayerDrawable(new Drawable[]{
+                new InsetDrawable(shadow, dp(1), dp(5), dp(1), 0),
+                glass
+        });
+    }
+
+    private Drawable premiumGlassBackground(int cornerRadius, boolean panel, boolean selected) {
+        boolean dark = isDarkMode();
+        GradientDrawable shadow = new GradientDrawable();
+        shadow.setCornerRadius(cornerRadius);
+        shadow.setColor(dark ? 0x66000000 : 0x33000000);
+
+        int[] colors;
         int stroke;
-        if (isDarkMode()) {
-            top = selected ? 0xFF3A3A3A : 0x22333333;
-            bottom = selected ? 0xFF202020 : 0x16101010;
-            stroke = selected ? 0x26FFFFFF : 0x08FFFFFF;
+        if (dark) {
+            colors = panel
+                    ? new int[]{0xE82A2A30, 0xD8141418}
+                    : new int[]{0xD52B2B31, 0xC5121216};
+            stroke = selected ? 0x30FFFFFF : 0x18FFFFFF;
         } else {
-            top = selected ? 0xFFE8E8E8 : 0x20FFFFFF;
-            bottom = selected ? 0xFFD6D6D6 : 0x10FFFFFF;
-            stroke = selected ? 0xFFFFFFFF : 0x22FFFFFF;
+            colors = panel
+                    ? new int[]{0xF7FFFFFF, 0xEDE9E9E9}
+                    : new int[]{0xF8FFFFFF, 0xDDECECEC};
+            stroke = selected ? 0xFFFFFFFF : 0x88FFFFFF;
         }
-        GradientDrawable drawable = new GradientDrawable(
+        GradientDrawable glass = new GradientDrawable(GradientDrawable.Orientation.TOP_BOTTOM, colors);
+        glass.setCornerRadius(cornerRadius);
+        glass.setStroke(dp(1), stroke);
+
+        GradientDrawable highlight = new GradientDrawable(
                 GradientDrawable.Orientation.TOP_BOTTOM,
-                new int[]{top, bottom}
+                dark ? new int[]{0x20FFFFFF, 0x00FFFFFF} : new int[]{0x88FFFFFF, 0x00FFFFFF}
         );
-        drawable.setCornerRadius(dp(26));
-        drawable.setStroke(dp(1), stroke);
-        return drawable;
+        highlight.setCornerRadius(cornerRadius);
+
+        return new LayerDrawable(new Drawable[]{
+                new InsetDrawable(shadow, dp(1), dp(7), dp(1), 0),
+                glass,
+                new InsetDrawable(highlight, dp(1), dp(1), dp(1), dp(cornerRadius > dp(28) ? 18 : 14))
+        });
     }
 
-    private GradientDrawable makeShutterBackground() {
-        GradientDrawable drawable;
-        if (isDarkMode()) {
-            drawable = new GradientDrawable(
-                    GradientDrawable.Orientation.TOP_BOTTOM,
-                    new int[]{0xFF3A3A3A, 0xFF202020}
-            );
-            drawable.setStroke(dp(1), 0x26FFFFFF);
+    private Drawable premiumButtonBackground(boolean selected) {
+        boolean dark = isDarkMode();
+        GradientDrawable shadow = new GradientDrawable();
+        shadow.setCornerRadius(dp(26));
+        shadow.setColor(selected ? 0x44000000 : 0x22000000);
+
+        int[] colors;
+        int stroke;
+        if (dark) {
+            colors = selected ? new int[]{0xFF47474D, 0xFF25252A} : new int[]{0x352F2F35, 0x20141418};
+            stroke = selected ? 0x44FFFFFF : 0x10FFFFFF;
         } else {
-            drawable = new GradientDrawable(
-                    GradientDrawable.Orientation.TOP_BOTTOM,
-                    new int[]{0xFFFFFFFF, 0xFFE6E6E6}
-            );
-            drawable.setStroke(dp(1), 0xFFFFFFFF);
+            colors = selected ? new int[]{0xFFFFFFFF, 0xFFE2E2E2} : new int[]{0x55FFFFFF, 0x18FFFFFF};
+            stroke = selected ? 0xFFFFFFFF : 0x55FFFFFF;
         }
-        drawable.setShape(GradientDrawable.OVAL);
-        return drawable;
+        GradientDrawable glass = new GradientDrawable(GradientDrawable.Orientation.TOP_BOTTOM, colors);
+        glass.setCornerRadius(dp(26));
+        glass.setStroke(dp(1), stroke);
+
+        GradientDrawable shine = new GradientDrawable(
+                GradientDrawable.Orientation.TOP_BOTTOM,
+                dark ? new int[]{0x18FFFFFF, 0x00FFFFFF} : new int[]{0x90FFFFFF, 0x00FFFFFF}
+        );
+        shine.setCornerRadius(dp(26));
+
+        return new LayerDrawable(new Drawable[]{
+                new InsetDrawable(shadow, dp(1), selected ? dp(5) : dp(3), dp(1), 0),
+                glass,
+                new InsetDrawable(shine, dp(1), dp(1), dp(1), dp(20))
+        });
     }
 
-    private GradientDrawable makeRecordingButtonBackground() {
-        GradientDrawable drawable = new GradientDrawable(
+    private Drawable premiumShutterBackground() {
+        boolean dark = isDarkMode();
+        GradientDrawable shadow = new GradientDrawable();
+        shadow.setShape(GradientDrawable.OVAL);
+        shadow.setColor(0x55000000);
+
+        GradientDrawable glass = new GradientDrawable(
                 GradientDrawable.Orientation.TOP_BOTTOM,
-                new int[]{0xEEFF4B4B, 0xEEB00020}
+                dark ? new int[]{0xFF4A4A50, 0xFF222228} : new int[]{0xFFFFFFFF, 0xFFE5E5E5}
         );
-        drawable.setCornerRadius(dp(24));
-        drawable.setStroke(dp(1), 0x44FF6B6B);
-        return drawable;
+        glass.setShape(GradientDrawable.OVAL);
+        glass.setStroke(dp(1), dark ? 0x44FFFFFF : 0xFFFFFFFF);
+
+        GradientDrawable shine = new GradientDrawable(
+                GradientDrawable.Orientation.TOP_BOTTOM,
+                dark ? new int[]{0x22FFFFFF, 0x00FFFFFF} : new int[]{0xAAFFFFFF, 0x00FFFFFF}
+        );
+        shine.setShape(GradientDrawable.OVAL);
+
+        return new LayerDrawable(new Drawable[]{
+                new InsetDrawable(shadow, dp(1), dp(6), dp(1), 0),
+                glass,
+                new InsetDrawable(shine, dp(4), dp(4), dp(4), dp(26))
+        });
     }
 
     private boolean isDarkMode() {
@@ -892,7 +941,7 @@ public class MainActivity extends Activity implements SurfaceHolder.Callback {
 
             recording = true;
             if (videoModeButton != null) {
-                videoModeButton.setText("PARAR");
+                videoModeButton.setText("■  PARAR");
                 videoModeButton.setTextColor(Color.WHITE);
                 videoModeButton.setBackground(makeRecordingButtonBackground());
                 videoModeButton.setElevation(dp(10));
@@ -900,7 +949,7 @@ public class MainActivity extends Activity implements SurfaceHolder.Callback {
             status("Gravando vídeo em perfil alto...");
         } catch (Exception error) {
             if (videoModeButton != null) {
-                videoModeButton.setText("VÍDEO");
+                videoModeButton.setText("▶  VÍDEO");
                 applyModeButtonState(videoModeButton, videoMode);
             }
             cleanupRecorder();
@@ -919,7 +968,7 @@ public class MainActivity extends Activity implements SurfaceHolder.Callback {
         } finally {
             recording = false;
             if (videoModeButton != null) {
-                videoModeButton.setText("VÍDEO");
+                videoModeButton.setText("▶  VÍDEO");
                 applyModeButtonState(videoModeButton, videoMode);
             }
             cleanupRecorder();
@@ -1033,7 +1082,7 @@ public class MainActivity extends Activity implements SurfaceHolder.Callback {
         zoomValue = 0;
         exposureValue = 0;
         torchEnabled = false;
-        flashButton.setText("FLASH");
+        flashButton.setText("ϟ  FLASH");
         openCameraWhenReady();
     }
 
@@ -1041,7 +1090,7 @@ public class MainActivity extends Activity implements SurfaceHolder.Callback {
         if (camera == null) return;
         torchEnabled = !torchEnabled;
         applyHighQualityParameters(false);
-        flashButton.setText(torchEnabled ? "FLASH ON" : "FLASH");
+        flashButton.setText(torchEnabled ? "ϟ  ON" : "ϟ  FLASH");
     }
 
     private void changeZoom(int delta) {
