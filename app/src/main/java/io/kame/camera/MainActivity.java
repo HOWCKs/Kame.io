@@ -7,13 +7,7 @@ import android.content.ContentValues;
 import android.content.res.ColorStateList;
 import android.content.res.Configuration;
 import android.content.pm.PackageManager;
-import android.graphics.Bitmap;
-import android.graphics.BitmapFactory;
-import android.graphics.Canvas;
 import android.graphics.Color;
-import android.graphics.ColorMatrix;
-import android.graphics.ColorMatrixColorFilter;
-import android.graphics.Paint;
 import android.graphics.Typeface;
 import android.graphics.drawable.GradientDrawable;
 import android.hardware.Camera;
@@ -44,7 +38,6 @@ import android.widget.SeekBar;
 import android.widget.TextView;
 import android.widget.Toast;
 
-import java.io.ByteArrayOutputStream;
 import java.io.OutputStream;
 import java.text.SimpleDateFormat;
 import java.util.Collections;
@@ -59,11 +52,10 @@ public class MainActivity extends Activity implements SurfaceHolder.Callback {
 
     private SurfaceView surfaceView;
     private TextView statusText;
-    private Button photoModeButton;
+    private Button shutterButton;
     private Button videoModeButton;
     private Button switchButton;
     private Button flashButton;
-    private Button filterButton;
     private Button exposureDownButton;
     private Button focusButton;
     private Button exposureUpButton;
@@ -74,8 +66,6 @@ public class MainActivity extends Activity implements SurfaceHolder.Callback {
     private Button fpsSettingButton;
     private Button stabilizationSettingButton;
     private FrameLayout settingsPanel;
-    private FrameLayout filterPanel;
-    private SeekBar filterIntensitySlider;
 
     private Camera camera;
     private SurfaceHolder surfaceHolder;
@@ -100,16 +90,10 @@ public class MainActivity extends Activity implements SurfaceHolder.Callback {
     private final Runnable hideZoomSliderRunnable = () -> {
         if (zoomSlider != null) zoomSlider.setVisibility(View.GONE);
     };
-    private final Runnable hideFilterPanelRunnable = () -> {
-        if (filterPanel != null) filterPanel.setVisibility(View.GONE);
-    };
     private int videoQualityMode = 0;
     private int fpsMode = 0;
     private boolean boostedBitrate = false;
     private boolean videoStabilizationEnabled = true;
-    private int selectedFilter = 0;
-    private int filterIntensity = 100;
-    private final String[] filterNames = new String[]{"Natural", "Cinema", "Vivo", "Quente", "Frio", "Mono", "Comida", "Retrato", "HDR", "Drama", "Noir"};
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -273,27 +257,21 @@ public class MainActivity extends Activity implements SurfaceHolder.Callback {
         actionsRow.setGravity(Gravity.CENTER_VERTICAL);
         actionsRow.setPadding(dp(8), 0, dp(8), 0);
 
-        photoModeButton = capsuleActionButton("FOTO", () -> {
-            setVideoMode(false);
-            takePhoto();
-        });
+        shutterButton = shutterButton();
         videoModeButton = capsuleActionButton("VÍDEO", () -> {
             setVideoMode(true);
             toggleVideo();
         });
         switchButton = capsuleActionButton("VIRAR", this::switchCamera);
         flashButton = capsuleActionButton("FLASH", this::toggleFlash);
-        filterButton = capsuleActionButton("FILTRO", this::openFilterPanel);
         exposureDownButton = capsuleActionButton("EV -", () -> changeExposure(-1));
         focusButton = capsuleActionButton("FOCO", this::triggerAutoFocus);
         exposureUpButton = capsuleActionButton("EV +", () -> changeExposure(1));
         settingsButton = capsuleActionButton("⚙", this::openVideoSettings);
 
-        actionsRow.addView(photoModeButton);
         actionsRow.addView(videoModeButton);
         actionsRow.addView(switchButton);
         actionsRow.addView(flashButton);
-        actionsRow.addView(filterButton);
         actionsRow.addView(exposureDownButton);
         actionsRow.addView(focusButton);
         actionsRow.addView(exposureUpButton);
@@ -308,13 +286,18 @@ public class MainActivity extends Activity implements SurfaceHolder.Callback {
                 FrameLayout.LayoutParams.WRAP_CONTENT,
                 Gravity.CENTER
         );
+        scrollParams.leftMargin = dp(62);
         controls.addView(scrollView, scrollParams);
+
+        FrameLayout.LayoutParams shutterParams = new FrameLayout.LayoutParams(dp(52), dp(52), Gravity.START | Gravity.CENTER_VERTICAL);
+        shutterParams.leftMargin = dp(6);
+        controls.addView(shutterButton, shutterParams);
 
         setVideoMode(false);
 
         FrameLayout.LayoutParams controlsParams = new FrameLayout.LayoutParams(
                 FrameLayout.LayoutParams.MATCH_PARENT,
-                dp(60),
+                dp(64),
                 Gravity.BOTTOM | Gravity.CENTER_HORIZONTAL
         );
         controlsParams.leftMargin = dp(18);
@@ -322,11 +305,6 @@ public class MainActivity extends Activity implements SurfaceHolder.Callback {
         controlsParams.bottomMargin = dp(14);
         root.addView(controls, controlsParams);
 
-        filterPanel = buildFilterPanel();
-        root.addView(filterPanel, new FrameLayout.LayoutParams(
-                FrameLayout.LayoutParams.MATCH_PARENT,
-                FrameLayout.LayoutParams.MATCH_PARENT
-        ));
 
         settingsPanel = buildVideoSettingsPanel();
         root.addView(settingsPanel, new FrameLayout.LayoutParams(
@@ -357,7 +335,7 @@ public class MainActivity extends Activity implements SurfaceHolder.Callback {
                 float dy = Math.abs(event.getY() - touchStartY);
                 boolean recentPinch = System.currentTimeMillis() - lastPinchAtMs < 650;
                 if (!gestureConsumed && !recentPinch && dx < dp(18) && dy < dp(18)) {
-                    takePhoto();
+                    triggerAutoFocus();
                 }
                 gestureConsumed = false;
                 return true;
@@ -376,13 +354,13 @@ public class MainActivity extends Activity implements SurfaceHolder.Callback {
         button.setTextSize(12f);
         button.setTypeface(Typeface.DEFAULT_BOLD);
         button.setAllCaps(false);
-        button.setMinWidth(dp(78));
-        button.setMinHeight(dp(42));
-        button.setPadding(dp(10), 0, dp(10), 0);
+        button.setMinWidth(dp(86));
+        button.setMinHeight(dp(46));
+        button.setPadding(dp(12), 0, dp(12), dp(1));
         button.setBackground(makeButtonBackground(false));
         button.setElevation(dp(3));
         button.setTranslationZ(dp(1));
-        LinearLayout.LayoutParams params = new LinearLayout.LayoutParams(LinearLayout.LayoutParams.WRAP_CONTENT, dp(42));
+        LinearLayout.LayoutParams params = new LinearLayout.LayoutParams(LinearLayout.LayoutParams.WRAP_CONTENT, dp(46));
         params.leftMargin = dp(3);
         params.rightMargin = dp(3);
         button.setLayoutParams(params);
@@ -393,9 +371,28 @@ public class MainActivity extends Activity implements SurfaceHolder.Callback {
         return button;
     }
 
+    private Button shutterButton() {
+        Button button = new Button(this);
+        button.setText("◎");
+        button.setTextSize(28f);
+        button.setTypeface(Typeface.DEFAULT_BOLD);
+        button.setTextColor(isDarkMode() ? Color.WHITE : 0xFF111111);
+        button.setAllCaps(false);
+        button.setPadding(0, 0, 0, dp(2));
+        button.setBackground(makeShutterBackground());
+        button.setElevation(dp(12));
+        button.setTranslationZ(dp(8));
+        button.setOnClickListener(view -> {
+            tactileClick(view);
+            setVideoMode(false);
+            takePhoto();
+        });
+        return button;
+    }
+
     private void setVideoMode(boolean enabled) {
         videoMode = enabled;
-        applyModeButtonState(photoModeButton, !enabled);
+        if (shutterButton != null) shutterButton.setBackground(makeShutterBackground());
         applyModeButtonState(videoModeButton, enabled);
         status(enabled ? "Modo vídeo" : "Modo foto");
     }
@@ -412,124 +409,6 @@ public class MainActivity extends Activity implements SurfaceHolder.Callback {
         button.setTranslationZ(selected ? dp(7) : dp(1));
         button.setScaleX(selected ? 1.05f : 1f);
         button.setScaleY(selected ? 1.05f : 1f);
-    }
-
-    private FrameLayout buildFilterPanel() {
-        FrameLayout overlay = new FrameLayout(this);
-        overlay.setVisibility(View.GONE);
-        overlay.setOnClickListener(view -> closeFilterPanel());
-
-        LinearLayout card = new LinearLayout(this);
-        card.setOrientation(LinearLayout.VERTICAL);
-        card.setPadding(dp(14), dp(12), dp(14), dp(12));
-        card.setBackground(makeFloatingPanelBackground());
-        card.setElevation(dp(18));
-        card.setTranslationZ(dp(12));
-        card.setOnClickListener(view -> scheduleHideFilterPanel());
-
-        TextView title = new TextView(this);
-        title.setText("Filtros");
-        title.setTextColor(isDarkMode() ? Color.WHITE : 0xFF111111);
-        title.setTextSize(16f);
-        title.setTypeface(Typeface.DEFAULT_BOLD);
-        title.setGravity(Gravity.CENTER);
-        title.setPadding(0, 0, 0, dp(8));
-        card.addView(title, new LinearLayout.LayoutParams(
-                LinearLayout.LayoutParams.MATCH_PARENT,
-                LinearLayout.LayoutParams.WRAP_CONTENT
-        ));
-
-        HorizontalScrollView filtersScroll = new HorizontalScrollView(this);
-        filtersScroll.setHorizontalScrollBarEnabled(false);
-        filtersScroll.setOverScrollMode(HorizontalScrollView.OVER_SCROLL_NEVER);
-        LinearLayout filterRow = new LinearLayout(this);
-        filterRow.setOrientation(LinearLayout.HORIZONTAL);
-        filterRow.setGravity(Gravity.CENTER_VERTICAL);
-        for (int i = 0; i < filterNames.length; i++) {
-            final int index = i;
-            Button option = capsuleActionButton(filterNames[i].toUpperCase(Locale.US), () -> {
-                selectedFilter = index;
-                if (filterButton != null) filterButton.setText(index == 0 ? "FILTRO" : filterNames[index].toUpperCase(Locale.US));
-                scheduleHideFilterPanel();
-            });
-            filterRow.addView(option);
-        }
-        filtersScroll.addView(filterRow, new HorizontalScrollView.LayoutParams(
-                HorizontalScrollView.LayoutParams.WRAP_CONTENT,
-                HorizontalScrollView.LayoutParams.WRAP_CONTENT
-        ));
-        card.addView(filtersScroll, new LinearLayout.LayoutParams(
-                LinearLayout.LayoutParams.MATCH_PARENT,
-                dp(48)
-        ));
-
-        TextView intensityLabel = new TextView(this);
-        intensityLabel.setText("Intensidade");
-        intensityLabel.setTextColor(isDarkMode() ? Color.WHITE : 0xFF111111);
-        intensityLabel.setTextSize(13f);
-        intensityLabel.setGravity(Gravity.CENTER);
-        intensityLabel.setPadding(0, dp(10), 0, 0);
-        card.addView(intensityLabel);
-
-        filterIntensitySlider = new SeekBar(this);
-        filterIntensitySlider.setMax(100);
-        filterIntensitySlider.setProgress(filterIntensity);
-        filterIntensitySlider.setOnSeekBarChangeListener(new SeekBar.OnSeekBarChangeListener() {
-            @Override
-            public void onProgressChanged(SeekBar seekBar, int progress, boolean fromUser) {
-                filterIntensity = progress;
-                if (fromUser) scheduleHideFilterPanel();
-            }
-
-            @Override
-            public void onStartTrackingTouch(SeekBar seekBar) {
-                uiHandler.removeCallbacks(hideFilterPanelRunnable);
-            }
-
-            @Override
-            public void onStopTrackingTouch(SeekBar seekBar) {
-                scheduleHideFilterPanel();
-            }
-        });
-        card.addView(filterIntensitySlider, new LinearLayout.LayoutParams(
-                LinearLayout.LayoutParams.MATCH_PARENT,
-                dp(42)
-        ));
-
-        LinearLayout bottom = new LinearLayout(this);
-        bottom.setGravity(Gravity.CENTER);
-        Button ok = settingsOptionButton("OK", this::closeFilterPanel);
-        Button back = settingsOptionButton("VOLTAR", this::closeFilterPanel);
-        bottom.addView(back, new LinearLayout.LayoutParams(0, dp(46), 1f));
-        bottom.addView(ok, new LinearLayout.LayoutParams(0, dp(46), 1f));
-        card.addView(bottom);
-
-        FrameLayout.LayoutParams cardParams = new FrameLayout.LayoutParams(
-                FrameLayout.LayoutParams.MATCH_PARENT,
-                FrameLayout.LayoutParams.WRAP_CONTENT,
-                Gravity.BOTTOM | Gravity.CENTER_HORIZONTAL
-        );
-        cardParams.leftMargin = dp(18);
-        cardParams.rightMargin = dp(18);
-        cardParams.bottomMargin = dp(88);
-        overlay.addView(card, cardParams);
-        return overlay;
-    }
-
-    private void openFilterPanel() {
-        if (filterPanel != null) filterPanel.setVisibility(View.VISIBLE);
-        scheduleHideFilterPanel();
-    }
-
-    private void closeFilterPanel() {
-        uiHandler.removeCallbacks(hideFilterPanelRunnable);
-        if (filterPanel != null) filterPanel.setVisibility(View.GONE);
-        enableImmersiveMode();
-    }
-
-    private void scheduleHideFilterPanel() {
-        uiHandler.removeCallbacks(hideFilterPanelRunnable);
-        uiHandler.postDelayed(hideFilterPanelRunnable, 10000);
     }
 
     private FrameLayout buildVideoSettingsPanel() {
@@ -740,8 +619,27 @@ public class MainActivity extends Activity implements SurfaceHolder.Callback {
                 GradientDrawable.Orientation.TOP_BOTTOM,
                 new int[]{top, bottom}
         );
-        drawable.setCornerRadius(dp(24));
+        drawable.setCornerRadius(dp(26));
         drawable.setStroke(dp(1), stroke);
+        return drawable;
+    }
+
+    private GradientDrawable makeShutterBackground() {
+        GradientDrawable drawable;
+        if (isDarkMode()) {
+            drawable = new GradientDrawable(
+                    GradientDrawable.Orientation.TOP_BOTTOM,
+                    new int[]{0xFF3A3A3A, 0xFF202020}
+            );
+            drawable.setStroke(dp(1), 0x26FFFFFF);
+        } else {
+            drawable = new GradientDrawable(
+                    GradientDrawable.Orientation.TOP_BOTTOM,
+                    new int[]{0xFFFFFFFF, 0xFFE6E6E6}
+            );
+            drawable.setStroke(dp(1), 0xFFFFFFFF);
+        }
+        drawable.setShape(GradientDrawable.OVAL);
         return drawable;
     }
 
@@ -924,8 +822,6 @@ public class MainActivity extends Activity implements SurfaceHolder.Callback {
             return;
         }
 
-        byte[] outputData = applySelectedFilter(data);
-
         String name = timestampName("IMG") + ".jpg";
         ContentValues values = new ContentValues();
         values.put(MediaStore.MediaColumns.DISPLAY_NAME, name);
@@ -943,7 +839,7 @@ public class MainActivity extends Activity implements SurfaceHolder.Callback {
             if (uri == null) throw new IllegalStateException("MediaStore sem URI");
             try (OutputStream output = getContentResolver().openOutputStream(uri, "w")) {
                 if (output == null) throw new IllegalStateException("Sem saída para arquivo");
-                output.write(outputData);
+                output.write(data);
                 output.flush();
             }
             if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
@@ -963,124 +859,6 @@ public class MainActivity extends Activity implements SurfaceHolder.Callback {
             status("Erro ao salvar foto: " + error.getMessage());
             toast("Erro ao salvar foto");
         }
-    }
-
-    private byte[] applySelectedFilter(byte[] jpegData) {
-        if (selectedFilter == 0 || filterIntensity <= 0) return jpegData;
-        Bitmap source = null;
-        Bitmap result = null;
-        try {
-            source = BitmapFactory.decodeByteArray(jpegData, 0, jpegData.length);
-            if (source == null) return jpegData;
-            result = Bitmap.createBitmap(source.getWidth(), source.getHeight(), Bitmap.Config.ARGB_8888);
-            Canvas canvas = new Canvas(result);
-            Paint paint = new Paint(Paint.ANTI_ALIAS_FLAG | Paint.FILTER_BITMAP_FLAG);
-            paint.setColorFilter(new ColorMatrixColorFilter(createFilterMatrix(selectedFilter, filterIntensity / 100f)));
-            canvas.drawBitmap(source, 0, 0, paint);
-            ByteArrayOutputStream output = new ByteArrayOutputStream(Math.max(jpegData.length, 1024));
-            result.compress(Bitmap.CompressFormat.JPEG, 96, output);
-            return output.toByteArray();
-        } catch (Throwable ignored) {
-            return jpegData;
-        } finally {
-            if (source != null) source.recycle();
-            if (result != null) result.recycle();
-        }
-    }
-
-    private ColorMatrix createFilterMatrix(int filter, float amount) {
-        ColorMatrix matrix = new ColorMatrix();
-        ColorMatrix effect = new ColorMatrix();
-        switch (filter) {
-            case 1: // Cinema: contraste forte, sombras levemente frias e pele quente.
-                effect.setSaturation(0.72f);
-                matrix.postConcat(effect);
-                matrix.postConcat(contrastMatrix(1.28f, -8f));
-                matrix.postConcat(colorScale(1.14f, 1.03f, 0.88f));
-                break;
-            case 2: // Vivo: cores fortes e contraste visível.
-                effect.setSaturation(1.85f);
-                matrix.postConcat(effect);
-                matrix.postConcat(contrastMatrix(1.20f, 8f));
-                matrix.postConcat(colorScale(1.06f, 1.08f, 1.04f));
-                break;
-            case 3: // Quente.
-                effect.setSaturation(1.18f);
-                matrix.postConcat(effect);
-                matrix.postConcat(contrastMatrix(1.12f, 5f));
-                matrix.postConcat(colorScale(1.30f, 1.10f, 0.78f));
-                break;
-            case 4: // Frio.
-                effect.setSaturation(1.08f);
-                matrix.postConcat(effect);
-                matrix.postConcat(contrastMatrix(1.10f, 0f));
-                matrix.postConcat(colorScale(0.78f, 1.02f, 1.32f));
-                break;
-            case 5: // Mono.
-                effect.setSaturation(0f);
-                matrix.postConcat(effect);
-                matrix.postConcat(contrastMatrix(1.32f, 4f));
-                break;
-            case 6: // Comida: quente, saturado, mais claro.
-                effect.setSaturation(1.65f);
-                matrix.postConcat(effect);
-                matrix.postConcat(contrastMatrix(1.18f, 12f));
-                matrix.postConcat(colorScale(1.22f, 1.14f, 0.88f));
-                break;
-            case 7: // Retrato: tons de pele mais quentes e contraste moderado.
-                effect.setSaturation(1.20f);
-                matrix.postConcat(effect);
-                matrix.postConcat(contrastMatrix(1.08f, 10f));
-                matrix.postConcat(colorScale(1.14f, 1.06f, 0.96f));
-                break;
-            case 8: // HDR: contraste e saturação fortes para paisagem.
-                effect.setSaturation(1.45f);
-                matrix.postConcat(effect);
-                matrix.postConcat(contrastMatrix(1.35f, -2f));
-                matrix.postConcat(colorScale(1.05f, 1.08f, 1.05f));
-                break;
-            case 9: // Drama: escuro, cinematográfico e bem diferente.
-                effect.setSaturation(0.62f);
-                matrix.postConcat(effect);
-                matrix.postConcat(contrastMatrix(1.55f, -28f));
-                matrix.postConcat(colorScale(1.12f, 0.96f, 0.82f));
-                break;
-            case 10: // Noir: preto e branco pesado.
-                effect.setSaturation(0f);
-                matrix.postConcat(effect);
-                matrix.postConcat(contrastMatrix(1.65f, -18f));
-                break;
-            default:
-                break;
-        }
-        if (amount < 0.99f) {
-            ColorMatrix identity = new ColorMatrix();
-            float[] base = identity.getArray();
-            float[] filtered = matrix.getArray();
-            float[] mixed = new float[20];
-            for (int i = 0; i < 20; i++) {
-                mixed[i] = base[i] + ((filtered[i] - base[i]) * amount);
-            }
-            matrix.set(mixed);
-        }
-        return matrix;
-    }
-
-    private ColorMatrix contrastMatrix(float contrast, float brightness) {
-        float translate = (-0.5f * contrast + 0.5f) * 255f + brightness;
-        ColorMatrix matrix = new ColorMatrix(new float[]{
-                contrast, 0, 0, 0, translate,
-                0, contrast, 0, 0, translate,
-                0, 0, contrast, 0, translate,
-                0, 0, 0, 1, 0
-        });
-        return matrix;
-    }
-
-    private ColorMatrix colorScale(float red, float green, float blue) {
-        ColorMatrix matrix = new ColorMatrix();
-        matrix.setScale(red, green, blue, 1f);
-        return matrix;
     }
 
     private void toggleVideo() {
