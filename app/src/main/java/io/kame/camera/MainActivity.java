@@ -576,25 +576,6 @@ public class MainActivity extends Activity implements SurfaceHolder.Callback {
         }
     }
 
-    private GradientDrawable makeFloatingPanelBackground() {
-        GradientDrawable drawable;
-        if (isDarkMode()) {
-            drawable = new GradientDrawable(
-                    GradientDrawable.Orientation.TOP_BOTTOM,
-                    new int[]{0xEE202020, 0xEE101010}
-            );
-            drawable.setStroke(dp(1), 0x12FFFFFF);
-        } else {
-            drawable = new GradientDrawable(
-                    GradientDrawable.Orientation.TOP_BOTTOM,
-                    new int[]{0xF2FFFFFF, 0xEDEFEFEF}
-            );
-            drawable.setStroke(dp(1), 0x44FFFFFF);
-        }
-        drawable.setCornerRadius(dp(30));
-        return drawable;
-    }
-
     private View buildAnalogDashboard() {
         LinearLayout dashboard = new LinearLayout(this);
         dashboard.setOrientation(LinearLayout.HORIZONTAL);
