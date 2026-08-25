@@ -246,8 +246,8 @@ public class MainActivity extends Activity implements SurfaceHolder.Callback {
         FrameLayout controls = new FrameLayout(this);
         controls.setPadding(dp(8), dp(6), dp(8), dp(6));
         controls.setBackground(makeCapsuleBackground());
-        controls.setElevation(dp(22));
-        controls.setTranslationZ(dp(14));
+        controls.setElevation(dp(18));
+        controls.setTranslationZ(dp(10));
 
         HorizontalScrollView scrollView = new HorizontalScrollView(this);
         scrollView.setHorizontalScrollBarEnabled(false);
@@ -350,16 +350,17 @@ public class MainActivity extends Activity implements SurfaceHolder.Callback {
     private Button capsuleActionButton(String label, Runnable action) {
         Button button = new Button(this);
         button.setText(label);
-        button.setTextColor(isDarkMode() ? Color.WHITE : 0xFF111111);
-        button.setTextSize(12f);
+        button.setTextColor(isDarkMode() ? 0xFFF7F7FF : 0xFF12121A);
+        button.setTextSize(12.2f);
         button.setTypeface(Typeface.DEFAULT_BOLD);
         button.setAllCaps(false);
-        button.setMinWidth(dp(86));
+        button.setLetterSpacing(0.02f);
+        button.setMinWidth(dp(88));
         button.setMinHeight(dp(46));
         button.setPadding(dp(12), 0, dp(12), dp(1));
         button.setBackground(makeButtonBackground(false));
-        button.setElevation(dp(3));
-        button.setTranslationZ(dp(1));
+        button.setElevation(dp(5));
+        button.setTranslationZ(dp(2));
         LinearLayout.LayoutParams params = new LinearLayout.LayoutParams(LinearLayout.LayoutParams.WRAP_CONTENT, dp(46));
         params.leftMargin = dp(3);
         params.rightMargin = dp(3);
@@ -376,8 +377,9 @@ public class MainActivity extends Activity implements SurfaceHolder.Callback {
         button.setText("◎");
         button.setTextSize(28f);
         button.setTypeface(Typeface.DEFAULT_BOLD);
-        button.setTextColor(isDarkMode() ? Color.WHITE : 0xFF111111);
+        button.setTextColor(isDarkMode() ? 0xFFF7F7FF : 0xFF12121A);
         button.setAllCaps(false);
+        button.setLetterSpacing(0.02f);
         button.setPadding(0, 0, 0, dp(2));
         button.setBackground(makeShutterBackground());
         button.setElevation(dp(12));
@@ -400,15 +402,15 @@ public class MainActivity extends Activity implements SurfaceHolder.Callback {
     private void applyModeButtonState(Button button, boolean selected) {
         if (button == null) return;
         if (isDarkMode()) {
-            button.setTextColor(selected ? Color.WHITE : 0xFFEDEDED);
+            button.setTextColor(selected ? Color.WHITE : 0xFFF1F1F6);
         } else {
-            button.setTextColor(selected ? 0xFF050510 : 0xFF181818);
+            button.setTextColor(selected ? Color.WHITE : 0xFF171722);
         }
         button.setBackground(makeButtonBackground(selected));
-        button.setElevation(selected ? dp(12) : dp(3));
-        button.setTranslationZ(selected ? dp(7) : dp(1));
-        button.setScaleX(selected ? 1.05f : 1f);
-        button.setScaleY(selected ? 1.05f : 1f);
+        button.setElevation(selected ? dp(14) : dp(5));
+        button.setTranslationZ(selected ? dp(8) : dp(2));
+        button.setScaleX(selected ? 1.045f : 1f);
+        button.setScaleY(selected ? 1.045f : 1f);
     }
 
     private FrameLayout buildVideoSettingsPanel() {
@@ -427,9 +429,10 @@ public class MainActivity extends Activity implements SurfaceHolder.Callback {
 
         TextView title = new TextView(this);
         title.setText("Configurações de vídeo");
-        title.setTextColor(isDarkMode() ? Color.WHITE : 0xFF111111);
+        title.setTextColor(isDarkMode() ? 0xFFFFFFFF : 0xFF15151E);
         title.setTextSize(18f);
         title.setTypeface(Typeface.DEFAULT_BOLD);
+        title.setLetterSpacing(0.015f);
         title.setGravity(Gravity.CENTER);
         title.setPadding(0, 0, 0, dp(12));
         card.addView(title, new LinearLayout.LayoutParams(
@@ -464,10 +467,11 @@ public class MainActivity extends Activity implements SurfaceHolder.Callback {
     private Button settingsOptionButton(String label, Runnable action) {
         Button button = new Button(this);
         button.setText(label);
-        button.setTextColor(isDarkMode() ? Color.WHITE : 0xFF111111);
+        button.setTextColor(isDarkMode() ? 0xFFF7F7FF : 0xFF171722);
         button.setTextSize(14f);
         button.setTypeface(Typeface.DEFAULT_BOLD);
         button.setAllCaps(false);
+        button.setLetterSpacing(0.015f);
         button.setPadding(dp(12), 0, dp(12), 0);
         button.setBackground(makeButtonBackground(false));
         button.setOnClickListener(view -> {
@@ -568,16 +572,16 @@ public class MainActivity extends Activity implements SurfaceHolder.Callback {
         GradientDrawable drawable;
         if (isDarkMode()) {
             drawable = new GradientDrawable(
-                    GradientDrawable.Orientation.TOP_BOTTOM,
-                    new int[]{0xF0202020, 0xF0101010}
+                    GradientDrawable.Orientation.TL_BR,
+                    new int[]{0xEA1C1C26, 0xDD111117, 0xEA222230}
             );
-            drawable.setStroke(dp(1), 0x12FFFFFF);
+            drawable.setStroke(dp(1), 0x26BDEBFF);
         } else {
             drawable = new GradientDrawable(
-                    GradientDrawable.Orientation.TOP_BOTTOM,
-                    new int[]{0xF2FFFFFF, 0xEDEFEFEF}
+                    GradientDrawable.Orientation.TL_BR,
+                    new int[]{0xF8FFFFFF, 0xEEEFF6FF, 0xF6FFFFFF}
             );
-            drawable.setStroke(dp(1), 0x44FFFFFF);
+            drawable.setStroke(dp(1), 0xAAFFFFFF);
         }
         drawable.setCornerRadius(dp(30));
         return drawable;
@@ -587,40 +591,41 @@ public class MainActivity extends Activity implements SurfaceHolder.Callback {
         GradientDrawable drawable;
         if (isDarkMode()) {
             drawable = new GradientDrawable(
-                    GradientDrawable.Orientation.TOP_BOTTOM,
-                    new int[]{0xEE202020, 0xDD101010}
+                    GradientDrawable.Orientation.LEFT_RIGHT,
+                    new int[]{0xD61A1A22, 0xBF101016, 0xD6202028}
             );
-            drawable.setStroke(dp(1), 0x12FFFFFF);
+            drawable.setStroke(dp(1), 0x2A9EEBFF);
         } else {
             drawable = new GradientDrawable(
-                    GradientDrawable.Orientation.TOP_BOTTOM,
-                    new int[]{0xF2FFFFFF, 0xDDEFEFEF}
+                    GradientDrawable.Orientation.LEFT_RIGHT,
+                    new int[]{0xF8FFFFFF, 0xE8F1F7FF, 0xF5FFFFFF}
             );
-            drawable.setStroke(dp(1), 0x55FFFFFF);
+            drawable.setStroke(dp(1), 0xC8FFFFFF);
         }
-        drawable.setCornerRadius(dp(30));
+        drawable.setCornerRadius(dp(32));
         return drawable;
     }
 
     private GradientDrawable makeButtonBackground(boolean selected) {
-        int top;
-        int bottom;
-        int stroke;
+        GradientDrawable drawable;
         if (isDarkMode()) {
-            top = selected ? 0xFF3A3A3A : 0x22333333;
-            bottom = selected ? 0xFF202020 : 0x16101010;
-            stroke = selected ? 0x26FFFFFF : 0x08FFFFFF;
+            drawable = new GradientDrawable(
+                    GradientDrawable.Orientation.TL_BR,
+                    selected
+                            ? new int[]{0xFF00C2FF, 0xFF7B61FF, 0xFFFF4ECD}
+                            : new int[]{0x362C2C35, 0x2014141B}
+            );
+            drawable.setStroke(dp(1), selected ? 0x80FFFFFF : 0x16FFFFFF);
         } else {
-            top = selected ? 0xFFE8E8E8 : 0x20FFFFFF;
-            bottom = selected ? 0xFFD6D6D6 : 0x10FFFFFF;
-            stroke = selected ? 0xFFFFFFFF : 0x22FFFFFF;
+            drawable = new GradientDrawable(
+                    GradientDrawable.Orientation.TL_BR,
+                    selected
+                            ? new int[]{0xFF00A7FF, 0xFF7A5CFF, 0xFFFF4EB8}
+                            : new int[]{0x55FFFFFF, 0x22EAF3FF}
+            );
+            drawable.setStroke(dp(1), selected ? 0xDFFFFFFF : 0x66FFFFFF);
         }
-        GradientDrawable drawable = new GradientDrawable(
-                GradientDrawable.Orientation.TOP_BOTTOM,
-                new int[]{top, bottom}
-        );
         drawable.setCornerRadius(dp(26));
-        drawable.setStroke(dp(1), stroke);
         return drawable;
     }
 
@@ -628,16 +633,16 @@ public class MainActivity extends Activity implements SurfaceHolder.Callback {
         GradientDrawable drawable;
         if (isDarkMode()) {
             drawable = new GradientDrawable(
-                    GradientDrawable.Orientation.TOP_BOTTOM,
-                    new int[]{0xFF3A3A3A, 0xFF202020}
+                    GradientDrawable.Orientation.TL_BR,
+                    new int[]{0xFF00C2FF, 0xFF7B61FF, 0xFFFF4ECD}
             );
-            drawable.setStroke(dp(1), 0x26FFFFFF);
+            drawable.setStroke(dp(2), 0xAAFFFFFF);
         } else {
             drawable = new GradientDrawable(
-                    GradientDrawable.Orientation.TOP_BOTTOM,
-                    new int[]{0xFFFFFFFF, 0xFFE6E6E6}
+                    GradientDrawable.Orientation.TL_BR,
+                    new int[]{0xFFFFFFFF, 0xFFEFF7FF, 0xFFFFEAF8}
             );
-            drawable.setStroke(dp(1), 0xFFFFFFFF);
+            drawable.setStroke(dp(2), 0xEEFFFFFF);
         }
         drawable.setShape(GradientDrawable.OVAL);
         return drawable;
@@ -645,11 +650,11 @@ public class MainActivity extends Activity implements SurfaceHolder.Callback {
 
     private GradientDrawable makeRecordingButtonBackground() {
         GradientDrawable drawable = new GradientDrawable(
-                GradientDrawable.Orientation.TOP_BOTTOM,
-                new int[]{0xEEFF4B4B, 0xEEB00020}
+                GradientDrawable.Orientation.TL_BR,
+                new int[]{0xFFFF5A5A, 0xFFFF006E, 0xFF7B2CFF}
         );
-        drawable.setCornerRadius(dp(24));
-        drawable.setStroke(dp(1), 0x44FF6B6B);
+        drawable.setCornerRadius(dp(26));
+        drawable.setStroke(dp(1), 0x88FFFFFF);
         return drawable;
     }
 
