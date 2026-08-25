@@ -211,6 +211,37 @@ public class MainActivity extends Activity implements SurfaceHolder.Callback {
                 Gravity.TOP
         ));
 
+        View analogDashboard = buildAnalogDashboard();
+        FrameLayout.LayoutParams dashboardParams = new FrameLayout.LayoutParams(
+                FrameLayout.LayoutParams.MATCH_PARENT,
+                dp(118),
+                Gravity.TOP | Gravity.CENTER_HORIZONTAL
+        );
+        dashboardParams.leftMargin = dp(28);
+        dashboardParams.rightMargin = dp(28);
+        dashboardParams.topMargin = dp(34);
+        root.addView(analogDashboard, dashboardParams);
+
+        View focusReticle = buildFocusReticle();
+        root.addView(focusReticle, new FrameLayout.LayoutParams(
+                dp(190),
+                dp(88),
+                Gravity.CENTER
+        ));
+
+        TextView dataStrip = dashboardText("AUTO  EV 0    ISO AUTO    JPEG 100%", 12f, true);
+        dataStrip.setGravity(Gravity.CENTER);
+        dataStrip.setBackground(makeSmallPillBackground());
+        FrameLayout.LayoutParams dataParams = new FrameLayout.LayoutParams(
+                FrameLayout.LayoutParams.MATCH_PARENT,
+                dp(38),
+                Gravity.BOTTOM | Gravity.CENTER_HORIZONTAL
+        );
+        dataParams.leftMargin = dp(44);
+        dataParams.rightMargin = dp(44);
+        dataParams.bottomMargin = dp(86);
+        root.addView(dataStrip, dataParams);
+
         zoomSlider = new SeekBar(this);
         zoomSlider.setMax(100);
         zoomSlider.setProgress(0);
@@ -350,7 +381,7 @@ public class MainActivity extends Activity implements SurfaceHolder.Callback {
     private Button capsuleActionButton(String label, Runnable action) {
         Button button = new Button(this);
         button.setText(label);
-        button.setTextColor(0xFFF8FAFF);
+        button.setTextColor(0xFFF2F2F2);
         button.setTextSize(12.2f);
         button.setTypeface(Typeface.DEFAULT_BOLD);
         button.setAllCaps(false);
@@ -401,7 +432,7 @@ public class MainActivity extends Activity implements SurfaceHolder.Callback {
 
     private void applyModeButtonState(Button button, boolean selected) {
         if (button == null) return;
-        button.setTextColor(selected ? Color.WHITE : 0xFFF2F4FA);
+        button.setTextColor(selected ? Color.WHITE : 0xFFE6E6E6);
         button.setBackground(makeButtonBackground(selected));
         button.setElevation(selected ? dp(14) : dp(5));
         button.setTranslationZ(selected ? dp(8) : dp(2));
@@ -564,7 +595,56 @@ public class MainActivity extends Activity implements SurfaceHolder.Callback {
         return drawable;
     }
 
-    private GradientDrawable makeSettingsCardBackground() {
+    private View buildAnalogDashboard() {
+        LinearLayout dashboard = new LinearLayout(this);
+        dashboard.setOrientation(LinearLayout.HORIZONTAL);
+        dashboard.setGravity(Gravity.CENTER);
+        dashboard.setPadding(dp(14), dp(10), dp(14), dp(10));
+        dashboard.setBackground(makeDashboardBackground());
+        dashboard.setElevation(dp(18));
+        dashboard.setTranslationZ(dp(10));
+
+        TextView left = dashboardText("∞      5\n 3      1\n.7   .4m", 13f, false);
+        left.setGravity(Gravity.CENTER);
+        TextView center = dashboardText("AF      ◷ 5s\nAUTO  EV\n+2 +1  0  -1 -2", 12f, true);
+        center.setGravity(Gravity.CENTER);
+        center.setBackground(makeSmallPillBackground());
+        TextView right = dashboardText("2.8   4\n5.6   8\n11   16", 13f, false);
+        right.setGravity(Gravity.CENTER);
+
+        dashboard.addView(left, new LinearLayout.LayoutParams(0, LinearLayout.LayoutParams.MATCH_PARENT, 1f));
+        LinearLayout.LayoutParams centerParams = new LinearLayout.LayoutParams(0, LinearLayout.LayoutParams.MATCH_PARENT, 1.25f);
+        centerParams.leftMargin = dp(8);
+        centerParams.rightMargin = dp(8);
+        dashboard.addView(center, centerParams);
+        dashboard.addView(right, new LinearLayout.LayoutParams(0, LinearLayout.LayoutParams.MATCH_PARENT, 1f));
+        return dashboard;
+    }
+
+    private TextView dashboardText(String text, float size, boolean strong) {
+        TextView view = new TextView(this);
+        view.setText(text);
+        view.setTextColor(strong ? Color.WHITE : 0xFFE8E8E8);
+        view.setTextSize(size);
+        view.setTypeface(Typeface.MONOSPACE, strong ? Typeface.BOLD : Typeface.NORMAL);
+        view.setIncludeFontPadding(false);
+        view.setShadowLayer(3f, 0f, 1f, 0xCC000000);
+        return view;
+    }
+
+    private View buildFocusReticle() {
+        TextView reticle = new TextView(this);
+        reticle.setText("—   ▭   —");
+        reticle.setTextColor(0xDFFFFFFF);
+        reticle.setTextSize(34f);
+        reticle.setGravity(Gravity.CENTER);
+        reticle.setTypeface(Typeface.DEFAULT_BOLD);
+        reticle.setShadowLayer(8f, 0f, 2f, 0xAA000000);
+        reticle.setAlpha(0.82f);
+        return reticle;
+    }
+
+    private GradientDrawable makeFloatingPanelBackground() {
         GradientDrawable drawable = new GradientDrawable(
                 GradientDrawable.Orientation.TL_BR,
                 new int[]{0xF2222226, 0xEE121214, 0xF01C1C20}
@@ -574,13 +654,37 @@ public class MainActivity extends Activity implements SurfaceHolder.Callback {
         return drawable;
     }
 
+    private GradientDrawable makeSettingsCardBackground() {
+        return makeFloatingPanelBackground();
+    }
+
+    private GradientDrawable makeDashboardBackground() {
+        GradientDrawable drawable = new GradientDrawable(
+                GradientDrawable.Orientation.TL_BR,
+                new int[]{0xF016161A, 0xEA070708, 0xF01B1B20}
+        );
+        drawable.setCornerRadius(dp(28));
+        drawable.setStroke(dp(1), 0x30FFFFFF);
+        return drawable;
+    }
+
+    private GradientDrawable makeSmallPillBackground() {
+        GradientDrawable drawable = new GradientDrawable(
+                GradientDrawable.Orientation.TL_BR,
+                new int[]{0x552D2D32, 0x33111114}
+        );
+        drawable.setCornerRadius(dp(18));
+        drawable.setStroke(dp(1), 0x18FFFFFF);
+        return drawable;
+    }
+
     private GradientDrawable makeCapsuleBackground() {
         GradientDrawable drawable = new GradientDrawable(
                 GradientDrawable.Orientation.LEFT_RIGHT,
-                new int[]{0xE41B1D25, 0xD912141A, 0xE41E2028}
+                new int[]{0xE8212125, 0xDA111114, 0xE61D1D21}
         );
         drawable.setCornerRadius(dp(32));
-        drawable.setStroke(dp(1), 0x30C8F4FF);
+        drawable.setStroke(dp(1), 0x20FFFFFF);
         return drawable;
     }
 
@@ -588,31 +692,31 @@ public class MainActivity extends Activity implements SurfaceHolder.Callback {
         GradientDrawable drawable = new GradientDrawable(
                 GradientDrawable.Orientation.TL_BR,
                 selected
-                        ? new int[]{0xE900C2FF, 0xE96F63FF, 0xE9FF4EB8}
-                        : new int[]{0x4C343845, 0x241A1D26, 0x36313844}
+                        ? new int[]{0xFF4A4A4F, 0xFF2E2E32, 0xFF3A3A3F}
+                        : new int[]{0x502E2E33, 0x25202024, 0x302A2A2F}
         );
         drawable.setCornerRadius(dp(26));
-        drawable.setStroke(dp(1), selected ? 0x80FFFFFF : 0x18FFFFFF);
+        drawable.setStroke(dp(1), selected ? 0x36FFFFFF : 0x10FFFFFF);
         return drawable;
     }
 
     private GradientDrawable makeShutterBackground() {
         GradientDrawable drawable = new GradientDrawable(
                 GradientDrawable.Orientation.TL_BR,
-                new int[]{0xF200C2FF, 0xF26F63FF, 0xF2FF4EB8}
+                new int[]{0xFF505055, 0xFF252529, 0xFF3B3B40}
         );
         drawable.setShape(GradientDrawable.OVAL);
-        drawable.setStroke(dp(2), 0xAFFFFFFF);
+        drawable.setStroke(dp(2), 0x44FFFFFF);
         return drawable;
     }
 
     private GradientDrawable makeRecordingButtonBackground() {
         GradientDrawable drawable = new GradientDrawable(
                 GradientDrawable.Orientation.TL_BR,
-                new int[]{0xE9FF5A5A, 0xE9FF006E, 0xE97B2CFF}
+                new int[]{0xDD8B2635, 0xDD4A151D, 0xDD2A1216}
         );
         drawable.setCornerRadius(dp(26));
-        drawable.setStroke(dp(1), 0x88FFFFFF);
+        drawable.setStroke(dp(1), 0x33FFFFFF);
         return drawable;
     }
 
