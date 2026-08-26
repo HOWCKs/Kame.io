@@ -52,6 +52,10 @@ public class MainActivity extends Activity implements SurfaceHolder.Callback {
 
     private SurfaceView surfaceView;
     private TextView statusText;
+    private TextView analogLeftText;
+    private TextView analogCenterText;
+    private TextView analogRightText;
+    private TextView dataStripText;
     private Button shutterButton;
     private Button videoModeButton;
     private Button switchButton;
@@ -229,9 +233,9 @@ public class MainActivity extends Activity implements SurfaceHolder.Callback {
                 Gravity.CENTER
         ));
 
-        TextView dataStrip = dashboardText("AUTO  EV 0    ISO AUTO    JPEG 100%", 12f, true);
-        dataStrip.setGravity(Gravity.CENTER);
-        dataStrip.setBackground(makeSmallPillBackground());
+        dataStripText = dashboardText("AUTO  EV 0    ISO AUTO    JPEG 100%", 12f, true);
+        dataStripText.setGravity(Gravity.CENTER);
+        dataStripText.setBackground(makeSmallPillBackground());
         FrameLayout.LayoutParams dataParams = new FrameLayout.LayoutParams(
                 FrameLayout.LayoutParams.MATCH_PARENT,
                 dp(38),
@@ -240,7 +244,7 @@ public class MainActivity extends Activity implements SurfaceHolder.Callback {
         dataParams.leftMargin = dp(44);
         dataParams.rightMargin = dp(44);
         dataParams.bottomMargin = dp(86);
-        root.addView(dataStrip, dataParams);
+        root.addView(dataStripText, dataParams);
 
         zoomSlider = new SeekBar(this);
         zoomSlider.setMax(100);
@@ -325,6 +329,7 @@ public class MainActivity extends Activity implements SurfaceHolder.Callback {
         controls.addView(shutterButton, shutterParams);
 
         setVideoMode(false);
+        updateAnalogInterface();
 
         FrameLayout.LayoutParams controlsParams = new FrameLayout.LayoutParams(
                 FrameLayout.LayoutParams.MATCH_PARENT,
@@ -428,6 +433,7 @@ public class MainActivity extends Activity implements SurfaceHolder.Callback {
         if (shutterButton != null) shutterButton.setBackground(makeShutterBackground());
         applyModeButtonState(videoModeButton, enabled);
         status(enabled ? "Modo vídeo" : "Modo foto");
+        updateAnalogInterface();
     }
 
     private void applyModeButtonState(Button button, boolean selected) {
@@ -549,6 +555,7 @@ public class MainActivity extends Activity implements SurfaceHolder.Callback {
         if (bitrateSettingButton != null) bitrateSettingButton.setText("Bitrate: " + (boostedBitrate ? "REFORÇADO (teste)" : "NORMAL"));
         if (fpsSettingButton != null) fpsSettingButton.setText("FPS: " + fpsLabel() + " (seguro)");
         if (stabilizationSettingButton != null) stabilizationSettingButton.setText("Estabilização: " + (videoStabilizationEnabled ? "ON" : "OFF"));
+        updateAnalogInterface();
     }
 
     private String videoQualityLabel() {
@@ -585,21 +592,58 @@ public class MainActivity extends Activity implements SurfaceHolder.Callback {
         dashboard.setElevation(dp(18));
         dashboard.setTranslationZ(dp(10));
 
-        TextView left = dashboardText("∞      5\n 3      1\n.7   .4m", 13f, false);
-        left.setGravity(Gravity.CENTER);
-        TextView center = dashboardText("AF      ◷ 5s\nAUTO  EV\n+2 +1  0  -1 -2", 12f, true);
-        center.setGravity(Gravity.CENTER);
-        center.setBackground(makeSmallPillBackground());
-        TextView right = dashboardText("2.8   4\n5.6   8\n11   16", 13f, false);
-        right.setGravity(Gravity.CENTER);
+        analogLeftText = dashboardText("∞      5\n 3      1\n.7   .4m", 13f, false);
+        analogLeftText.setGravity(Gravity.CENTER);
+        analogCenterText = dashboardText("AF      ◷ 5s\nAUTO  EV\n+2 +1  0  -1 -2", 12f, true);
+        analogCenterText.setGravity(Gravity.CENTER);
+        analogCenterText.setBackground(makeSmallPillBackground());
+        analogRightText = dashboardText("2.8   4\n5.6   8\n11   16", 13f, false);
+        analogRightText.setGravity(Gravity.CENTER);
 
-        dashboard.addView(left, new LinearLayout.LayoutParams(0, LinearLayout.LayoutParams.MATCH_PARENT, 1f));
+        dashboard.addView(analogLeftText, new LinearLayout.LayoutParams(0, LinearLayout.LayoutParams.MATCH_PARENT, 1f));
         LinearLayout.LayoutParams centerParams = new LinearLayout.LayoutParams(0, LinearLayout.LayoutParams.MATCH_PARENT, 1.25f);
         centerParams.leftMargin = dp(8);
         centerParams.rightMargin = dp(8);
-        dashboard.addView(center, centerParams);
-        dashboard.addView(right, new LinearLayout.LayoutParams(0, LinearLayout.LayoutParams.MATCH_PARENT, 1f));
+        dashboard.addView(analogCenterText, centerParams);
+        dashboard.addView(analogRightText, new LinearLayout.LayoutParams(0, LinearLayout.LayoutParams.MATCH_PARENT, 1f));
+        updateAnalogInterface();
         return dashboard;
+    }
+
+    private void updateAnalogInterface() {
+        if (analogLeftText == null || analogCenterText == null || analogRightText == null || dataStripText == null) return;
+        String ev = String.format(Locale.US, "%+d", exposureValue);
+        String zoom = currentZoomLabel();
+        String mode = recording ? "REC" : (videoMode ? "VID" : "AF");
+        String quality = shortQualityLabel();
+        String fps = fpsMode == 2 ? "60" : (fpsMode == 1 ? "30" : "A");
+        analogLeftText.setText("∞    " + zoom + "\n5     3\n.7   .4m");
+        analogCenterText.setText(mode + "     ◷ " + (recording ? "ON" : "5s") + "\nAUTO  EV " + ev + "\n+2 +1  0  -1 -2");
+        analogRightText.setText("2.8   4\n5.6   8\n" + quality + "  " + fps);
+        dataStripText.setText("AUTO   EV " + ev + "     ISO AUTO     JPEG 100%");
+    }
+
+    private String currentZoomLabel() {
+        try {
+            if (camera != null) {
+                Camera.Parameters parameters = camera.getParameters();
+                List<Integer> ratios = parameters.getZoomRatios();
+                if (ratios != null && zoomValue >= 0 && zoomValue < ratios.size()) {
+                    return String.format(Locale.US, "%.1fx", ratios.get(zoomValue) / 100f);
+                }
+            }
+        } catch (Exception ignored) {
+        }
+        return "Z" + zoomValue;
+    }
+
+    private String shortQualityLabel() {
+        switch (videoQualityMode) {
+            case 1: return "4K";
+            case 2: return "FHD";
+            case 3: return "HD";
+            default: return "HI";
+        }
     }
 
     private TextView dashboardText(String text, float size, boolean strong) {
@@ -736,6 +780,7 @@ public class MainActivity extends Activity implements SurfaceHolder.Callback {
             applyHighQualityParameters(false);
             startPreview();
             status("Câmera pronta • JPEG 100% • maior resolução disponível");
+            updateAnalogInterface();
         } catch (Exception error) {
             status("Erro ao abrir câmera: " + error.getMessage());
         }
@@ -946,11 +991,13 @@ public class MainActivity extends Activity implements SurfaceHolder.Callback {
                 videoModeButton.setElevation(dp(10));
             }
             status("Gravando vídeo em perfil alto...");
+            updateAnalogInterface();
         } catch (Exception error) {
             if (videoModeButton != null) {
                 videoModeButton.setText("VÍDEO");
                 applyModeButtonState(videoModeButton, videoMode);
             }
+            updateAnalogInterface();
             cleanupRecorder();
             reconnectCameraAfterRecording();
             status("Erro ao gravar: " + error.getMessage());
@@ -970,6 +1017,7 @@ public class MainActivity extends Activity implements SurfaceHolder.Callback {
                 videoModeButton.setText("VÍDEO");
                 applyModeButtonState(videoModeButton, videoMode);
             }
+            updateAnalogInterface();
             cleanupRecorder();
             reconnectCameraAfterRecording();
         }
@@ -1082,6 +1130,7 @@ public class MainActivity extends Activity implements SurfaceHolder.Callback {
         exposureValue = 0;
         torchEnabled = false;
         flashButton.setText("FLASH");
+        updateAnalogInterface();
         openCameraWhenReady();
     }
 
@@ -1090,6 +1139,7 @@ public class MainActivity extends Activity implements SurfaceHolder.Callback {
         torchEnabled = !torchEnabled;
         applyHighQualityParameters(false);
         flashButton.setText(torchEnabled ? "FLASH ON" : "FLASH");
+        updateAnalogInterface();
     }
 
     private void changeZoom(int delta) {
@@ -1105,6 +1155,7 @@ public class MainActivity extends Activity implements SurfaceHolder.Callback {
             camera.setParameters(parameters);
             updateZoomSlider(parameters);
             status("Zoom: passo " + zoomValue + " de " + parameters.getMaxZoom());
+            updateAnalogInterface();
         } catch (Exception error) {
             status("Erro no zoom: " + error.getMessage());
         }
@@ -1121,6 +1172,7 @@ public class MainActivity extends Activity implements SurfaceHolder.Callback {
             camera.setParameters(parameters);
             updateZoomSlider(parameters);
             scheduleHideZoomSlider();
+            updateAnalogInterface();
         } catch (Exception error) {
             status("Erro no zoom: " + error.getMessage());
         }
@@ -1160,6 +1212,7 @@ public class MainActivity extends Activity implements SurfaceHolder.Callback {
             parameters.setExposureCompensation(exposureValue);
             camera.setParameters(parameters);
             status("Exposição: " + exposureValue + " de " + min + " a " + max);
+            updateAnalogInterface();
         } catch (Exception error) {
             status("Erro na exposição: " + error.getMessage());
         }
@@ -1175,7 +1228,10 @@ public class MainActivity extends Activity implements SurfaceHolder.Callback {
                 camera.setParameters(parameters);
             }
             camera.cancelAutoFocus();
-            camera.autoFocus((success, cam) -> status(success ? "Foco ajustado" : "Foco solicitado"));
+            camera.autoFocus((success, cam) -> {
+                status(success ? "Foco ajustado" : "Foco solicitado");
+                updateAnalogInterface();
+            });
         } catch (Exception error) {
             status("Foco indisponível: " + error.getMessage());
         }
