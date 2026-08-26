@@ -177,6 +177,8 @@ public class MainActivity extends Activity implements SurfaceHolder.Callback {
     private void buildUi() {
         FrameLayout root = new FrameLayout(this);
         root.setBackgroundColor(Color.BLACK);
+        root.setClipChildren(false);
+        root.setClipToPadding(false);
 
         surfaceView = new SurfaceView(this);
         surfaceView.setClickable(true);
@@ -215,37 +217,6 @@ public class MainActivity extends Activity implements SurfaceHolder.Callback {
                 Gravity.TOP
         ));
 
-        View analogDashboard = buildAnalogDashboard();
-        FrameLayout.LayoutParams dashboardParams = new FrameLayout.LayoutParams(
-                FrameLayout.LayoutParams.MATCH_PARENT,
-                dp(118),
-                Gravity.TOP | Gravity.CENTER_HORIZONTAL
-        );
-        dashboardParams.leftMargin = dp(28);
-        dashboardParams.rightMargin = dp(28);
-        dashboardParams.topMargin = dp(34);
-        root.addView(analogDashboard, dashboardParams);
-
-        View focusReticle = buildFocusReticle();
-        root.addView(focusReticle, new FrameLayout.LayoutParams(
-                dp(190),
-                dp(88),
-                Gravity.CENTER
-        ));
-
-        dataStripText = dashboardText("AUTO  EV 0    ISO AUTO    JPEG 100%", 12f, true);
-        dataStripText.setGravity(Gravity.CENTER);
-        dataStripText.setBackground(makeSmallPillBackground());
-        FrameLayout.LayoutParams dataParams = new FrameLayout.LayoutParams(
-                FrameLayout.LayoutParams.MATCH_PARENT,
-                dp(38),
-                Gravity.BOTTOM | Gravity.CENTER_HORIZONTAL
-        );
-        dataParams.leftMargin = dp(44);
-        dataParams.rightMargin = dp(44);
-        dataParams.bottomMargin = dp(86);
-        root.addView(dataStripText, dataParams);
-
         zoomSlider = new SeekBar(this);
         zoomSlider.setMax(100);
         zoomSlider.setProgress(0);
@@ -275,10 +246,12 @@ public class MainActivity extends Activity implements SurfaceHolder.Callback {
         );
         zoomParams.leftMargin = dp(28);
         zoomParams.rightMargin = dp(28);
-        zoomParams.bottomMargin = dp(82);
+        zoomParams.bottomMargin = dp(92);
         root.addView(zoomSlider, zoomParams);
 
         FrameLayout controls = new FrameLayout(this);
+        controls.setClipChildren(false);
+        controls.setClipToPadding(false);
         controls.setPadding(dp(8), dp(8), dp(8), dp(8));
         controls.setBackground(makeCapsuleBackground());
         controls.setElevation(dp(20));
@@ -326,12 +299,11 @@ public class MainActivity extends Activity implements SurfaceHolder.Callback {
         scrollParams.rightMargin = dp(8);
         controls.addView(scrollView, scrollParams);
 
-        FrameLayout.LayoutParams shutterParams = new FrameLayout.LayoutParams(dp(56), dp(56), Gravity.CENTER_HORIZONTAL | Gravity.TOP);
-        shutterParams.topMargin = dp(-28);
+        FrameLayout.LayoutParams shutterParams = new FrameLayout.LayoutParams(dp(58), dp(58), Gravity.CENTER_HORIZONTAL | Gravity.TOP);
+        shutterParams.topMargin = dp(-30);
         controls.addView(shutterButton, shutterParams);
 
         setVideoMode(false);
-        updateAnalogInterface();
 
         FrameLayout.LayoutParams controlsParams = new FrameLayout.LayoutParams(
                 FrameLayout.LayoutParams.MATCH_PARENT,
@@ -619,16 +591,7 @@ public class MainActivity extends Activity implements SurfaceHolder.Callback {
     }
 
     private void updateAnalogInterface() {
-        if (analogLeftText == null || analogCenterText == null || analogRightText == null || dataStripText == null) return;
-        String ev = String.format(Locale.US, "%+d", exposureValue);
-        String zoom = currentZoomLabel();
-        String mode = recording ? "REC" : (videoMode ? "VID" : "AF");
-        String quality = shortQualityLabel();
-        String fps = fpsMode == 2 ? "60" : (fpsMode == 1 ? "30" : "A");
-        analogLeftText.setText("∞    " + zoom + "\n5     3\n.7   .4m");
-        analogCenterText.setText(mode + "     ◷ " + (recording ? "ON" : "5s") + "\nAUTO  EV " + ev + "\n+2 +1  0  -1 -2");
-        analogRightText.setText("2.8   4\n5.6   8\n" + quality + "  " + fps);
-        dataStripText.setText("AUTO   EV " + ev + "     ISO AUTO     JPEG 100%");
+        // Interface analógica removida para manter a câmera limpa.
     }
 
     private String currentZoomLabel() {
