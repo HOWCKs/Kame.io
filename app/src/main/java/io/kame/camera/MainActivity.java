@@ -306,6 +306,7 @@ public class MainActivity extends Activity implements SurfaceHolder.Callback {
 
         actionsRow.addView(videoModeButton);
         actionsRow.addView(switchButton);
+        actionsRow.addView(centerActionSpacer());
         actionsRow.addView(flashButton);
         actionsRow.addView(exposureDownButton);
         actionsRow.addView(focusButton);
@@ -382,6 +383,12 @@ public class MainActivity extends Activity implements SurfaceHolder.Callback {
             default:
                 return true;
         }
+    }
+
+    private View centerActionSpacer() {
+        View spacer = new View(this);
+        spacer.setLayoutParams(new LinearLayout.LayoutParams(dp(128), dp(48)));
+        return spacer;
     }
 
     private Button capsuleActionButton(String label, Runnable action) {
