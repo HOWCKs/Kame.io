@@ -392,11 +392,11 @@ public class MainActivity extends Activity implements SurfaceHolder.Callback {
     private void applyPhotoButtonState(boolean selected) {
         if (shutterButton == null) return;
         shutterButton.setTextColor(selected ? Color.WHITE : 0xFFB7C6C2);
-        shutterButton.setBackground(selected ? makePrimaryButtonBackground() : makeButtonBackground(false));
-        shutterButton.setElevation(selected ? dp(12) : dp(5));
-        shutterButton.setTranslationZ(selected ? dp(7) : dp(2));
-        shutterButton.setScaleX(selected ? 1.035f : 1f);
-        shutterButton.setScaleY(selected ? 1.035f : 1f);
+        shutterButton.setBackground(makeButtonBackground(selected));
+        shutterButton.setElevation(selected ? dp(14) : dp(5));
+        shutterButton.setTranslationZ(selected ? dp(8) : dp(2));
+        shutterButton.setScaleX(selected ? 1.045f : 1f);
+        shutterButton.setScaleY(selected ? 1.045f : 1f);
     }
 
     private void applyModeButtonState(Button button, boolean selected) {
@@ -683,16 +683,6 @@ public class MainActivity extends Activity implements SurfaceHolder.Callback {
             drawable.setStroke(dp(1), 0x33B7C6C2);
         }
         drawable.setCornerRadius(dp(24));
-        return drawable;
-    }
-
-    private GradientDrawable makePrimaryButtonBackground() {
-        GradientDrawable drawable = new GradientDrawable(
-                GradientDrawable.Orientation.TL_BR,
-                new int[]{0xFFCA0013, 0xFFE0182A}
-        );
-        drawable.setCornerRadius(dp(24));
-        drawable.setStroke(dp(1), 0x66EEEBE3);
         return drawable;
     }
 
