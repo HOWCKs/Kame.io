@@ -1,23 +1,30 @@
 # Kame.io
 
-App de câmera em **Flutter** com barra de navegação inferior em **glassmorphism**
-(translúcida, com blur, borda hairline e indicador deslizante animado).
+App de câmera em **Flutter** com barra de controle inferior no estilo **"notch"**:
+cartão branco arredondado com recorte côncavo circular onde o obturador
+vermelho (anel branco + glow roxo/azul) fica encaixado metade para fora —
+mesma linguagem visual das referências do usuário.
 
 ## Estrutura
 
 ```
 lib/
-  main.dart                      # KameApp + HomeShell (IndexedStack de 3 abas)
+  main.dart                      # KameApp -> CameraScreen
   theme/kame_theme.dart          # tokens de cor/raio + ThemeData (Material 3, dark)
-  widgets/glass_bottom_nav.dart  # a barra de navegação "de vidro"
-  screens/camera_screen.dart     # viewfinder (plugin camera)
-  screens/gallery_screen.dart    # grade de fotos (image_picker)
-  screens/settings_screen.dart   # preferências
+  widgets/notched_camera_bar.dart# NotchedCameraBar + NotchedBarShape (recorte côncavo)
+  screens/camera_screen.dart     # viewfinder + modos foto/vídeo + overlays
+  screens/gallery_screen.dart    # grade de mídias (overlay)
+  screens/settings_screen.dart   # preferências (sheet de Config.)
 android/                         # projeto Android nativo (AGP 8.1.4 / Gradle 8.4)
 .github/workflows/
   build-apk.yml                  # gera o APK instalável
   flutter-ci.yml                 # analyze + test em PRs
+preview/index.html               # réplica interativa da barra no navegador
 ```
+
+Barra de controle (igual às referências): `Foto` e `Vídeo` à esquerda do notch
+(modos de captura; o obturador vira "stop" + timer em vídeo), `Virar`, `Flash`
+e `Config.` à direita. A miniatura da última mídia no topo abre a galeria.
 
 ## Rodar localmente
 

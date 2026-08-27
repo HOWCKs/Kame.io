@@ -1,14 +1,20 @@
+import 'dart:async';
+import 'dart:io';
+import 'dart:ui' show FontFeature;
+
 import 'package:camera/camera.dart';
 import 'package:flutter/material.dart';
 
 import '../theme/kame_theme.dart';
+import '../widgets/notched_camera_bar.dart';
+import 'gallery_screen.dart';
+import 'settings_screen.dart';
 
-/// Live viewfinder with capture / lens switch / flash controls.
+/// Tela principal: viewfinder em tela cheia + barra "notch" de controle.
+/// Configurações e galeria abrem como overlays por cima da câmera, que
+/// continua viva embaixo.
 class CameraScreen extends StatefulWidget {
-  const CameraScreen({super.key, this.onOpenGallery});
-
-  /// Optional shortcut to the gallery tab (wired by [HomeShell]).
-  final VoidCallback? onOpenGallery;
+  const CameraScreen({super.key});
 
   @override
   State<CameraScreen> createState() => _CameraScreenState();
@@ -23,7 +29,15 @@ class _CameraScreenState extends State<CameraScreen>
   bool _busy = false;
   bool _front = false;
   FlashMode _flash = FlashMode.off;
+  CaptureMode _mode = CaptureMode.foto;
+  bool _recording = false;
+  int _recSeconds = 0;
+  Timer? _recTimer;
   String? _error;
+  XFile? _lastMedia;
+  final List<XFile> _gallery = [];
+  bool _showSettings = false;
+  bool _showGallery = false;
 
   @override
   void initState() {
@@ -34,6 +48,7 @@ class _CameraScreenState extends State<CameraScreen>
 
   @override
   void dispose() {
+    _recTimer?.cancel();
     WidgetsBinding.instance.removeObserver(this);
     _controller?.dispose();
     super.dispose();
@@ -96,7 +111,7 @@ class _CameraScreenState extends State<CameraScreen>
   }
 
   Future<void> _switchLens() async {
-    if (_cameras.length < 2 || _busy) return;
+    if (_cameras.length < 2 || _busy || _recording) return;
     setState(() {
       _busy = true;
       _lens = (_lens + 1) % _cameras.length;
@@ -118,93 +133,144 @@ class _CameraScreenState extends State<CameraScreen>
     }
   }
 
-  Future<void> _capture() async {
+  Future<void> _onShutter() async {
+    if (_mode == CaptureMode.foto) {
+      await _capturePhoto();
+    } else {
+      await _toggleRecording();
+    }
+  }
+
+  Future<void> _capturePhoto() async {
     final controller = _controller;
     if (controller == null || !controller.value.isInitialized || _busy) return;
     setState(() => _busy = true);
     try {
       final file = await controller.takePicture();
       if (!mounted) return;
-      ScaffoldMessenger.of(context)
-        ..hideCurrentSnackBar()
-        ..showSnackBar(
-          SnackBar(
-            content: Text('Foto salva em ${file.path}'),
-            behavior: SnackBarBehavior.floating,
-            backgroundColor: KameTokens.surface,
-          ),
-        );
+      _gallery.insert(0, file);
+      _lastMedia = file;
+      _snack('Foto salva em ${file.path}');
     } catch (e) {
       if (!mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Erro ao capturar: $e')),
-      );
+      _snack('Erro ao capturar: $e');
     } finally {
       if (mounted) setState(() => _busy = false);
     }
   }
 
-  IconData get _flashIcon => switch (_flash) {
-        FlashMode.torch => Icons.flashlight_on_rounded,
-        FlashMode.auto => Icons.flash_auto_rounded,
-        _ => Icons.flash_off_rounded,
-      };
+  Future<void> _toggleRecording() async {
+    final controller = _controller;
+    if (controller == null || !controller.value.isInitialized || _busy) return;
+
+    if (!_recording) {
+      setState(() => _busy = true);
+      try {
+        await controller.startVideoRecording();
+        _recSeconds = 0;
+        _recTimer = Timer.periodic(
+          const Duration(seconds: 1),
+          (_) => setState(() => _recSeconds++),
+        );
+        if (mounted) setState(() => _recording = true);
+      } catch (e) {
+        if (mounted) _snack('Erro ao gravar: $e');
+      } finally {
+        if (mounted) setState(() => _busy = false);
+      }
+      return;
+    }
+
+    _recTimer?.cancel();
+    setState(() => _busy = true);
+    try {
+      final file = await controller.stopVideoRecording();
+      if (!mounted) return;
+      _gallery.insert(0, file);
+      _lastMedia = file;
+      _snack('Vídeo salvo em ${file.path}');
+    } catch (e) {
+      if (!mounted) return;
+      _snack('Erro ao parar a gravação: $e');
+    } finally {
+      if (mounted) setState(() => _recording = false; _busy = false);
+    }
+  }
+
+  void _snack(String text) {
+    ScaffoldMessenger.of(context)
+      ..hideCurrentSnackBar()
+      ..showSnackBar(
+        SnackBar(
+          content: Text(text),
+          behavior: SnackBarBehavior.floating,
+          backgroundColor: KameTokens.surface,
+        ),
+      );
+  }
+
+  String get _recLabel {
+    final m = (_recSeconds ~/ 60).toString().padLeft(2, '0');
+    final s = (_recSeconds % 60).toString().padLeft(2, '0');
+    return '$m:$s';
+  }
 
   @override
   Widget build(BuildContext context) {
-    return DecoratedBox(
-      decoration: const BoxDecoration(
-        gradient: RadialGradient(
-          center: Alignment(-0.4, -0.8),
-          radius: 1.3,
-          colors: [Color(0xFF161D38), KameTokens.background],
-        ),
-      ),
-      child: SafeArea(
-        bottom: false,
-        child: Column(
-          children: [
-            Padding(
-              padding: const EdgeInsets.fromLTRB(
-                KameTokens.gap,
-                8,
-                KameTokens.gap,
-                8,
-              ),
-              child: Row(
-                children: [
-                  const Text(
-                    'Kame.io',
-                    style: TextStyle(
-                      fontWeight: FontWeight.w700,
-                      letterSpacing: 0.4,
-                    ),
-                  ),
-                  const SizedBox(width: 8),
-                  Text(
-                    _front ? 'frontal' : 'traseira',
-                    style: const TextStyle(
-                      color: KameTokens.muted,
-                      fontSize: 12,
-                    ),
-                  ),
-                  const Spacer(),
-                  if (_cameras.isNotEmpty)
-                    IconButton(
-                      onPressed: _cycleFlash,
-                      icon: Icon(_flashIcon),
-                      color: _flash == FlashMode.off
-                          ? KameTokens.muted
-                          : KameTokens.primary,
-                      tooltip: 'Flash',
-                    ),
-                ],
+    return Scaffold(
+      backgroundColor: KameTokens.background,
+      body: Stack(
+        children: [
+          Positioned.fill(child: _buildViewfinder()),
+          Positioned(
+            left: 0,
+            right: 0,
+            top: 0,
+            child: SafeArea(bottom: false, child: _buildTopBar()),
+          ),
+          Positioned(
+            left: 16,
+            right: 16,
+            bottom: 0,
+            child: SafeArea(
+              top: false,
+              minimum: const EdgeInsets.only(bottom: 12),
+              child: NotchedCameraBar(
+                mode: _mode,
+                recording: _recording,
+                flash: _flash,
+                onModeChanged: (m) => setState(() => _mode = m),
+                onShutter: _onShutter,
+                onFlip: _switchLens,
+                onFlash: _cycleFlash,
+                onConfig: () => setState(() => _showSettings = true),
               ),
             ),
-            Expanded(child: _buildViewfinder()),
-            _buildControls(),
+          ),
+          if (_showSettings) ...[
+            Positioned.fill(
+              child: GestureDetector(
+                onTap: () => setState(() => _showSettings = false),
+                child: const ColoredBox(color: Color(0x80000000)),
+              ),
+            ),
+            Positioned(
+              left: 0,
+              right: 0,
+              bottom: 0,
+              child: _SettingsSheet(
+                onClose: () => setState(() => _showSettings = false),
+              ),
+            ),
           ],
-        ),
+          if (_showGallery)
+            Positioned.fill(
+              child: GalleryScreen(
+                initialItems: _gallery,
+                onClose: () => setState(() => _showGallery = false),
+              ),
+            ),
+        ],
       ),
     );
   }
@@ -221,59 +287,127 @@ class _CameraScreenState extends State<CameraScreen>
         spinner: true,
       );
     }
+    return CameraPreview(camera);
+  }
+
+  Widget _buildTopBar() {
     return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: KameTokens.gap),
-      child: ClipRRect(
-        borderRadius: BorderRadius.circular(KameTokens.radiusCard),
-        child: CameraPreview(camera),
+      padding: const EdgeInsets.fromLTRB(16, 8, 16, 8),
+      child: Row(
+        children: [
+          // Última foto/vídeo — abre a galeria.
+          GestureDetector(
+            onTap: () => setState(() => _showGallery = true),
+            child: Container(
+              width: 44,
+              height: 44,
+              decoration: BoxDecoration(
+                borderRadius: BorderRadius.circular(12),
+                border: Border.all(color: KameTokens.glassStroke),
+                color: KameTokens.glassFill,
+              ),
+              clipBehavior: Clip.antiAlias,
+              child: _lastMedia == null
+                  ? const Icon(
+                      Icons.photo_library_outlined,
+                      size: 20,
+                      color: KameTokens.muted,
+                    )
+                  : _thumb(_lastMedia!),
+            ),
+          ),
+          const Spacer(),
+          if (_recording)
+            Container(
+              padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+              decoration: BoxDecoration(
+                color: const Color(0xB3000000),
+                borderRadius: BorderRadius.circular(999),
+              ),
+              child: Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Container(
+                    width: 8,
+                    height: 8,
+                    decoration: const BoxDecoration(
+                      color: NotchedCameraBar.accent,
+                      shape: BoxShape.circle,
+                    ),
+                  ),
+                  const SizedBox(width: 6),
+                  Text(
+                    _recLabel,
+                    style: const TextStyle(
+                      fontSize: 12,
+                      fontWeight: FontWeight.w600,
+                      fontFeatures: [FontFeature.tabularFigures()],
+                    ),
+                  ),
+                ],
+              ),
+              ),
+          const SizedBox(width: 8),
+          const Text(
+            'Kame.io',
+            style: TextStyle(fontWeight: FontWeight.w700, letterSpacing: 0.4),
+          ),
+        ],
       ),
     );
   }
 
-  Widget _buildControls() {
-    return Padding(
-      padding: const EdgeInsets.fromLTRB(
-        KameTokens.gap * 2,
-        KameTokens.gap,
-        KameTokens.gap * 2,
-        108, // clearance for the floating nav bar
-      ),
-      child: Row(
-        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+  Widget _thumb(XFile file) {
+    final lower = file.path.toLowerCase();
+    if (lower.endsWith('.mp4') || lower.endsWith('.mov')) {
+      return const Stack(
         children: [
-          _GlassIconButton(
-            icon: Icons.photo_library_outlined,
-            onTap: widget.onOpenGallery ?? () {},
-            enabled: widget.onOpenGallery != null,
-          ),
-          GestureDetector(
-            onTap: _busy ? null : _capture,
-            child: Container(
-              width: 76,
-              height: 76,
-              decoration: BoxDecoration(
-                shape: BoxShape.circle,
-                border: Border.all(color: KameTokens.onSurface, width: 3),
-              ),
-              child: Center(
-                child: AnimatedContainer(
-                  duration: KameTokens.fast,
-                  width: _busy ? 30 : 60,
-                  height: _busy ? 30 : 60,
-                  decoration: BoxDecoration(
-                    shape: BoxShape.circle,
-                    color: _busy ? KameTokens.muted : KameTokens.onSurface,
-                  ),
-                ),
-              ),
-            ),
-          ),
-          _GlassIconButton(
-            icon: Icons.cameraswitch_outlined,
-            onTap: _switchLens,
-            enabled: _cameras.length > 1 && !_busy,
+          Positioned.fill(child: ColoredBox(color: Color(0xFF20263E))),
+          Center(
+            child: Icon(Icons.videocam_rounded, size: 20, color: KameTokens.primary),
           ),
         ],
+      );
+    }
+    return Image.file(
+      File(file.path),
+      fit: BoxFit.cover,
+      errorBuilder: (context, error, stack) => const Icon(
+        Icons.broken_image_outlined,
+        size: 20,
+        color: KameTokens.muted,
+      ),
+    );
+  }
+}
+
+class _SettingsSheet extends StatelessWidget {
+  const _SettingsSheet({required this.onClose});
+
+  final VoidCallback onClose;
+
+  @override
+  Widget build(BuildContext context) {
+    final bottom = MediaQuery.of(context).padding.bottom;
+    return ClipRRect(
+      borderRadius: const BorderRadius.vertical(top: Radius.circular(28)),
+      child: Container(
+        height: 460 + bottom,
+        color: KameTokens.surface,
+        child: Stack(
+          children: [
+            const Positioned.fill(child: SettingsScreen(embedded: true)),
+            Positioned(
+              top: 10,
+              right: 10,
+              child: IconButton(
+                onPressed: onClose,
+                icon: const Icon(Icons.close_rounded),
+                color: KameTokens.muted,
+              ),
+            ),
+          ],
+        ),
       ),
     );
   }
@@ -310,40 +444,6 @@ class _Message extends StatelessWidget {
               ),
             ],
           ],
-        ),
-      ),
-    );
-  }
-}
-
-class _GlassIconButton extends StatelessWidget {
-  const _GlassIconButton({
-    required this.icon,
-    required this.onTap,
-    this.enabled = true,
-  });
-
-  final IconData icon;
-  final VoidCallback onTap;
-  final bool enabled;
-
-  @override
-  Widget build(BuildContext context) {
-    return Opacity(
-      opacity: enabled ? 1 : 0.35,
-      child: Material(
-        color: KameTokens.glassFill,
-        shape: const CircleBorder(
-          side: BorderSide(color: KameTokens.glassStroke),
-        ),
-        child: InkWell(
-          customBorder: const CircleBorder(),
-          onTap: enabled ? onTap : null,
-          child: SizedBox(
-            width: 52,
-            height: 52,
-            child: Icon(icon, color: KameTokens.onSurface),
-          ),
         ),
       ),
     );
