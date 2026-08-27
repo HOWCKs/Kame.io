@@ -1,0 +1,186 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Kame.io — preview da navegação</title>
+<style>
+  :root{
+    --bg:#06070D;
+    --surface:#0D1020;
+    --primary:#6EE7F9;
+    --secondary:#7C9CFF;
+    --on-surface:#E8ECFA;
+    --muted:#8C93B5;
+    --glass-fill:rgba(255,255,255,.078);
+    --glass-stroke:rgba(255,255,255,.14);
+    --smooth:380ms;
+    --spring:cubic-bezier(.22,1,.36,1);
+  }
+  *{box-sizing:border-box;margin:0;padding:0}
+  body{
+    min-height:100vh;display:grid;place-items:center;
+    background:radial-gradient(120% 90% at 20% 0%,#1b2140,#0b0f1f 40%,#04050a 100%);
+    background-color:#04050a;
+    font-family:ui-sans-serif,system-ui,"Segoe UI",Roboto,Inter,sans-serif;
+    color:var(--on-surface);padding:32px 16px;
+  }
+  .wrap{display:flex;flex-direction:column;align-items:center;gap:20px}
+  .phone{
+    width:390px;height:800px;border-radius:44px;overflow:hidden;position:relative;
+    border:1px solid rgba(255,255,255,.10);
+    box-shadow:0 40px 90px rgba(0,0,0,.65), inset 0 0 0 8px #0a0c16;
+    background:var(--bg);
+  }
+  /* colourful backdrop so the backdrop-blur is actually visible */
+  .backdrop{
+    position:absolute;inset:0;
+    background:
+      radial-gradient(60% 40% at 18% 12%, rgba(110,231,249,.35), transparent 60%),
+      radial-gradient(55% 45% at 88% 26%, rgba(124,156,255,.38), transparent 62%),
+      radial-gradient(70% 50% at 50% 96%, rgba(255,120,190,.22), transparent 65%),
+      linear-gradient(180deg,#141b33,#080a14 70%);
+  }
+  .screen{position:absolute;inset:0;display:flex;flex-direction:column;padding:18px 16px 0}
+  .topbar{display:flex;align-items:center;gap:8px;padding:8px 0}
+  .topbar b{letter-spacing:.4px}
+  .topbar span{color:var(--muted);font-size:12px}
+  .viewfinder{
+    flex:1;margin:8px 0;border-radius:20px;
+    background:linear-gradient(160deg,rgba(255,255,255,.06),rgba(255,255,255,.02));
+    border:1px solid var(--glass-stroke);
+    display:grid;place-items:center;color:var(--muted);text-align:center;padding:24px;
+    backdrop-filter:blur(2px);
+  }
+  .viewfinder small{display:block;margin-top:10px;font-size:12px;opacity:.8}
+  .controls{display:flex;justify-content:space-between;align-items:center;padding:16px 32px 0}
+  .round{
+    width:52px;height:52px;border-radius:50%;display:grid;place-items:center;
+    background:var(--glass-fill);border:1px solid var(--glass-stroke);color:var(--on-surface);
+  }
+  .shutter{
+    width:76px;height:76px;border-radius:50%;border:3px solid var(--on-surface);
+    display:grid;place-items:center;background:transparent;cursor:pointer;
+  }
+  .shutter i{width:60px;height:60px;border-radius:50%;background:var(--on-surface);display:block;transition:all 180ms}
+  .shutter:active i{width:30px;height:30px;background:var(--muted)}
+
+  /* ---------- the navigation bar (mirror of GlassBottomNav) ---------- */
+  .nav{
+    position:absolute;left:16px;right:16px;bottom:12px;height:68px;
+    border-radius:999px;overflow:hidden;
+    background:var(--glass-fill);
+    border:1px solid var(--glass-stroke);
+    backdrop-filter:blur(24px) saturate(160%);
+    -webkit-backdrop-filter:blur(24px) saturate(160%);
+    box-shadow:0 10px 28px rgba(0,0,0,.40), 0 -1px 1px rgba(255,255,255,.08);
+    display:flex;
+  }
+  .tint{
+    position:absolute;top:8px;bottom:8px;width:calc(100% / 3);left:0;
+    border-radius:999px;
+    background:linear-gradient(135deg,rgba(110,231,249,.26),rgba(124,156,255,.12));
+    border:1px solid rgba(110,231,249,.28);
+    box-shadow:0 0 22px -6px rgba(110,231,249,.30);
+    transition:left var(--smooth) var(--spring);
+  }
+  .item{
+    flex:1;position:relative;display:flex;flex-direction:column;align-items:center;
+    justify-content:center;gap:5px;border:0;background:none;cursor:pointer;
+    font:500 11.5px/1 inherit;letter-spacing:.2px;color:var(--muted);
+  }
+  .item svg{width:24px;height:24px;transition:transform var(--smooth) var(--spring)}
+  .item[aria-selected="true"]{color:var(--on-surface);font-weight:600}
+  .item[aria-selected="true"] svg{transform:scale(1.10)}
+  .item:hover{color:#cfd6f2}
+
+  .pages{position:absolute;inset:0}
+  .page{position:absolute;inset:0;display:none}
+  .page.on{display:flex}
+  .hint{max-width:390px;color:var(--muted);font-size:13px;text-align:center;line-height:1.6}
+  .hint b{color:var(--on-surface)}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <div class="phone">
+    <div class="backdrop"></div>
+
+    <div class="pages">
+      <!-- Câmera -->
+      <div class="page on" data-page="0">
+        <div class="screen">
+          <div class="topbar"><b>Kame.io</b><span>traseira</span></div>
+          <div class="viewfinder">
+            <div>
+              📷<br/>Viewfinder da câmera
+              <small>No APK real aqui entra o preview ao vivo do plugin <code>camera</code>.</small>
+            </div>
+          </div>
+          <div class="controls">
+            <div class="round">🖼️</div>
+            <button class="shutter" aria-label="Capturar"><i></i></button>
+            <div class="round">🔄</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Galeria -->
+      <div class="page" data-page="1">
+        <div class="screen">
+          <div class="topbar"><b>Galeria</b><span>0</span></div>
+          <div class="viewfinder"><div>🗂️<br/>Grade de fotos<small>Nenhuma foto ainda.</small></div></div>
+        </div>
+      </div>
+
+      <!-- Ajustes -->
+      <div class="page" data-page="2">
+        <div class="screen">
+          <div class="topbar"><b>Ajustes</b></div>
+          <div class="viewfinder"><div>⚙️<br/>Preferências<small>Grade 3x3 · som do obturador · salvar na galeria</small></div></div>
+        </div>
+      </div>
+    </div>
+
+    <nav class="nav" id="nav" aria-label="Navegação principal">
+      <div class="tint" id="tint"></div>
+      <button class="item" data-index="0" aria-selected="true">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M3 8.5A2.5 2.5 0 0 1 5.5 6h1.7l1-1.6a1 1 0 0 1 .85-.4h5.9a1 1 0 0 1 .85.4l1 1.6h1.7A2.5 2.5 0 0 1 21 8.5v8A2.5 2.5 0 0 1 18.5 19h-13A2.5 2.5 0 0 1 3 16.5z"/><circle cx="12" cy="12.5" r="3.4"/></svg>
+        <span>Câmera</span>
+      </button>
+      <button class="item" data-index="1" aria-selected="false">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4.5" width="18" height="15" rx="2.5"/><circle cx="8.5" cy="10" r="1.6"/><path d="m4 17 4.5-4.2a2 2 0 0 1 2.8.05L16 17.5"/><path d="m14.5 14 1.8-1.7a2 2 0 0 1 2.7 0L21 14"/></svg>
+        <span>Galeria</span>
+      </button>
+      <button class="item" data-index="2" aria-selected="false">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M4 7h9M17 7h3M4 17h3M11 17h9"/><circle cx="15" cy="7" r="2.2"/><circle cx="8" cy="17" r="2.2"/></svg>
+        <span>Ajustes</span>
+      </button>
+    </nav>
+  </div>
+
+  <p class="hint">
+    Preview 1:1 da <b>GlassBottomNav</b> do Flutter: pílula translúcida com
+    <b>backdrop-blur</b>, borda hairline, sombra em camadas e o <b>halo gradiente
+    que desliza</b> para o item ativo (380ms, ease-out). Clique nas abas.
+    <br/><br/>É a linha de base — me mande as imagens de referência que eu ajusto
+    cores, raio, ícones e animação para bater com o visual que você quer.
+  </p>
+</div>
+
+<script>
+  const nav = document.getElementById('nav');
+  const tint = document.getElementById('tint');
+  const items = [...nav.querySelectorAll('.item')];
+  const pages = [...document.querySelectorAll('.page')];
+
+  function select(index){
+    items.forEach((it, i) => it.setAttribute('aria-selected', String(i === index)));
+    pages.forEach(p => p.classList.toggle('on', Number(p.dataset.page) === index));
+    tint.style.left = `calc(${index} * (100% / 3))`;
+  }
+  items.forEach(it => it.addEventListener('click', () => select(Number(it.dataset.index))));
+  select(0);
+</script>
+</body>
+</html>
