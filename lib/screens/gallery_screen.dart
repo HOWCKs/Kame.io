@@ -112,7 +112,7 @@ class _GalleryScreenState extends State<GalleryScreen> {
                               'Nenhuma foto ainda.\nToque no obturador na tela da câmera ou importe da galeria do aparelho.',
                               textAlign: TextAlign.center,
                               style: TextStyle(
-                                color: KameTokens.muted.withValues(alpha: 0.9),
+                                color: KameTokens.muted.withOpacity(0.9),
                               ),
                             ),
                             const SizedBox(height: 20),

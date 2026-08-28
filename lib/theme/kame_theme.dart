@@ -72,7 +72,7 @@ class KameTheme {
         ),
         trackColor: WidgetStateProperty.resolveWith(
           (states) => states.contains(WidgetState.selected)
-              ? KameTokens.primary.withValues(alpha: 0.25)
+              ? KameTokens.primary.withOpacity(0.25)
               : const Color(0x1FFFFFFF),
         ),
         trackOutlineColor: const WidgetStatePropertyAll(KameTokens.glassStroke),

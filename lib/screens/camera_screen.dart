@@ -1,6 +1,5 @@
 import 'dart:async';
 import 'dart:io';
-import 'dart:ui' show FontFeature;
 
 import 'package:camera/camera.dart';
 import 'package:flutter/material.dart';
@@ -27,7 +26,6 @@ class _CameraScreenState extends State<CameraScreen>
   int _lens = 0;
   bool _ready = false;
   bool _busy = false;
-  bool _front = false;
   FlashMode _flash = FlashMode.off;
   CaptureMode _mode = CaptureMode.foto;
   bool _recording = false;
@@ -94,7 +92,6 @@ class _CameraScreenState extends State<CameraScreen>
     setState(() {
       _ready = false;
       _error = null;
-      _front = description.lensDirection == CameraLensDirection.front;
     });
 
     try {
@@ -193,7 +190,7 @@ class _CameraScreenState extends State<CameraScreen>
       if (!mounted) return;
       _snack('Erro ao parar a gravação: $e');
     } finally {
-      if (mounted) setState(() => _recording = false; _busy = false);
+      if (mounted) setState(() { _recording = false; _busy = false; });
     }
   }
 

@@ -177,7 +177,7 @@ class _BarAction extends StatelessWidget {
       child: InkWell(
         onTap: onTap,
         borderRadius: BorderRadius.circular(14),
-        splashColor: NotchedCameraBar.accent.withValues(alpha: 0.12),
+        splashColor: NotchedCameraBar.accent.withOpacity(0.12),
         child: SizedBox(
           width: 58,
           height: 64,
