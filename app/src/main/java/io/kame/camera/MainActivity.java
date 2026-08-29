@@ -41,6 +41,7 @@ import android.widget.FrameLayout;
 import android.widget.HorizontalScrollView;
 import android.widget.LinearLayout;
 import android.widget.SeekBar;
+import android.widget.ScrollView;
 import android.widget.TextView;
 import android.widget.Toast;
 
@@ -500,6 +501,17 @@ public class MainActivity extends Activity implements SurfaceHolder.Callback {
                 LinearLayout.LayoutParams.WRAP_CONTENT
         ));
 
+        ScrollView optionsScroll = new ScrollView(this);
+        optionsScroll.setFillViewport(false);
+        optionsScroll.setVerticalScrollBarEnabled(false);
+        optionsScroll.setOverScrollMode(ScrollView.OVER_SCROLL_IF_CONTENT_SCROLLS);
+        LinearLayout optionsList = new LinearLayout(this);
+        optionsList.setOrientation(LinearLayout.VERTICAL);
+        optionsScroll.addView(optionsList, new ScrollView.LayoutParams(
+                ScrollView.LayoutParams.MATCH_PARENT,
+                ScrollView.LayoutParams.WRAP_CONTENT
+        ));
+
         photoSizeSettingButton = settingsOptionButton("", this::cyclePhotoSizeMode);
         qualitySettingButton = settingsOptionButton("", this::cycleVideoQuality);
         codecSettingButton = settingsOptionButton("", this::cycleCodecMode);
@@ -520,36 +532,41 @@ public class MainActivity extends Activity implements SurfaceHolder.Callback {
         timecodeSettingButton = settingsOptionButton("", this::toggleTimecodeOverlay);
         sensorInfoSettingButton = settingsOptionButton("INFO DO SENSOR", this::showSensorInfo);
         Button closeButton = settingsOptionButton("FECHAR", this::closeVideoSettings);
-        card.addView(photoSizeSettingButton);
-        card.addView(qualitySettingButton);
-        card.addView(codecSettingButton);
-        card.addView(bitrateSettingButton);
-        card.addView(fpsSettingButton);
-        card.addView(stabilizationSettingButton);
-        card.addView(flashModeSettingButton);
-        card.addView(antibandingSettingButton);
-        card.addView(aeLockSettingButton);
-        card.addView(awbLockSettingButton);
-        card.addView(whiteBalanceSettingButton);
-        card.addView(focusModeSettingButton);
-        card.addView(sceneModeSettingButton);
-        card.addView(gridSettingButton);
-        card.addView(guidesSettingButton);
-        card.addView(histogramSettingButton);
-        card.addView(zebraSettingButton);
-        card.addView(timecodeSettingButton);
-        card.addView(sensorInfoSettingButton);
-        card.addView(closeButton);
+        optionsList.addView(photoSizeSettingButton);
+        optionsList.addView(qualitySettingButton);
+        optionsList.addView(codecSettingButton);
+        optionsList.addView(bitrateSettingButton);
+        optionsList.addView(fpsSettingButton);
+        optionsList.addView(stabilizationSettingButton);
+        optionsList.addView(flashModeSettingButton);
+        optionsList.addView(antibandingSettingButton);
+        optionsList.addView(aeLockSettingButton);
+        optionsList.addView(awbLockSettingButton);
+        optionsList.addView(whiteBalanceSettingButton);
+        optionsList.addView(focusModeSettingButton);
+        optionsList.addView(sceneModeSettingButton);
+        optionsList.addView(gridSettingButton);
+        optionsList.addView(guidesSettingButton);
+        optionsList.addView(histogramSettingButton);
+        optionsList.addView(zebraSettingButton);
+        optionsList.addView(timecodeSettingButton);
+        optionsList.addView(sensorInfoSettingButton);
+        optionsList.addView(closeButton);
+        card.addView(optionsScroll, new LinearLayout.LayoutParams(
+                LinearLayout.LayoutParams.MATCH_PARENT,
+                0,
+                1f
+        ));
         updateVideoSettingsLabels();
 
         FrameLayout.LayoutParams cardParams = new FrameLayout.LayoutParams(
                 FrameLayout.LayoutParams.MATCH_PARENT,
-                FrameLayout.LayoutParams.WRAP_CONTENT,
+                dp(430),
                 Gravity.BOTTOM | Gravity.CENTER_HORIZONTAL
         );
         cardParams.leftMargin = dp(22);
         cardParams.rightMargin = dp(22);
-        cardParams.bottomMargin = dp(96);
+        cardParams.bottomMargin = dp(92);
         overlay.addView(card, cardParams);
         return overlay;
     }
