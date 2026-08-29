@@ -8,6 +8,8 @@ import android.content.res.ColorStateList;
 import android.content.res.Configuration;
 import android.content.pm.PackageManager;
 import android.graphics.Color;
+import android.graphics.ImageFormat;
+import android.graphics.Rect;
 import android.graphics.Typeface;
 import android.graphics.drawable.GradientDrawable;
 import android.hardware.Camera;
@@ -42,6 +44,7 @@ import java.io.OutputStream;
 import java.text.SimpleDateFormat;
 import java.util.Collections;
 import java.util.Comparator;
+import java.util.ArrayList;
 import java.util.Date;
 import java.util.List;
 import java.util.Locale;
@@ -250,8 +253,11 @@ public class MainActivity extends Activity implements SurfaceHolder.Callback {
         root.addView(zoomSlider, zoomParams);
 
         FrameLayout controls = new FrameLayout(this);
-        controls.setClipChildren(false);
-        controls.setClipToPadding(false);
+        controls.setClipChildren(true);
+        controls.setClipToPadding(true);
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP) {
+            controls.setClipToOutline(true);
+        }
         controls.setPadding(dp(8), dp(8), dp(8), dp(8));
         controls.setBackground(makeCapsuleBackground());
         controls.setElevation(dp(18));
@@ -309,8 +315,8 @@ public class MainActivity extends Activity implements SurfaceHolder.Callback {
                 dp(64),
                 Gravity.BOTTOM | Gravity.CENTER_HORIZONTAL
         );
-        controlsParams.leftMargin = dp(8);
-        controlsParams.rightMargin = dp(8);
+        controlsParams.leftMargin = dp(14);
+        controlsParams.rightMargin = dp(14);
         controlsParams.bottomMargin = dp(8);
         root.addView(controls, controlsParams);
 
@@ -360,13 +366,13 @@ public class MainActivity extends Activity implements SurfaceHolder.Callback {
         Button button = new Button(this);
         button.setText(label);
         button.setTextColor(0xFF171E19);
-        button.setTextSize(12.2f);
+        button.setTextSize(11.6f);
         button.setTypeface(Typeface.create("sans-serif", Typeface.BOLD));
         button.setAllCaps(false);
         button.setLetterSpacing(0.02f);
-        button.setMinWidth(dp(80));
+        button.setMinWidth(dp(76));
         button.setMinHeight(dp(48));
-        button.setPadding(dp(12), 0, dp(12), dp(1));
+        button.setPadding(dp(10), 0, dp(10), dp(1));
         button.setBackground(makeButtonBackground(false));
         button.setElevation(dp(9));
         button.setTranslationZ(dp(4));
@@ -779,7 +785,10 @@ public class MainActivity extends Activity implements SurfaceHolder.Callback {
         if (camera == null) return;
         try {
             Camera.Parameters parameters = camera.getParameters();
+            parameters.setPictureFormat(ImageFormat.JPEG);
             parameters.setJpegQuality(100);
+            parameters.setJpegThumbnailQuality(100);
+            parameters.setRecordingHint(videoMode);
             if (!videoMode) {
                 parameters.setRotation(calculateMediaOrientation());
             }
@@ -790,16 +799,52 @@ public class MainActivity extends Activity implements SurfaceHolder.Callback {
                 parameters.setPictureSize(best.width, best.height);
             }
 
+            Camera.Size previewSize = chooseBestPreviewSize(parameters, videoMode);
+            if (previewSize != null) {
+                parameters.setPreviewSize(previewSize.width, previewSize.height);
+            }
+
             List<String> focusModes = parameters.getSupportedFocusModes();
             if (focusModes != null) {
                 if (videoMode && focusModes.contains(Camera.Parameters.FOCUS_MODE_CONTINUOUS_VIDEO)) {
                     parameters.setFocusMode(Camera.Parameters.FOCUS_MODE_CONTINUOUS_VIDEO);
-                } else if (focusModes.contains(Camera.Parameters.FOCUS_MODE_CONTINUOUS_PICTURE)) {
+                } else if (!videoMode && focusModes.contains(Camera.Parameters.FOCUS_MODE_CONTINUOUS_PICTURE)) {
                     parameters.setFocusMode(Camera.Parameters.FOCUS_MODE_CONTINUOUS_PICTURE);
                 } else if (focusModes.contains(Camera.Parameters.FOCUS_MODE_AUTO)) {
                     parameters.setFocusMode(Camera.Parameters.FOCUS_MODE_AUTO);
                 }
             }
+
+            List<String> sceneModes = parameters.getSupportedSceneModes();
+            if (sceneModes != null) {
+                if (!videoMode && sceneModes.contains(Camera.Parameters.SCENE_MODE_HDR)) {
+                    parameters.setSceneMode(Camera.Parameters.SCENE_MODE_HDR);
+                } else if (sceneModes.contains(Camera.Parameters.SCENE_MODE_AUTO)) {
+                    parameters.setSceneMode(Camera.Parameters.SCENE_MODE_AUTO);
+                }
+            }
+
+            List<String> whiteBalance = parameters.getSupportedWhiteBalance();
+            if (whiteBalance != null && whiteBalance.contains(Camera.Parameters.WHITE_BALANCE_AUTO)) {
+                parameters.setWhiteBalance(Camera.Parameters.WHITE_BALANCE_AUTO);
+            }
+
+            List<String> antibanding = parameters.getSupportedAntibanding();
+            if (antibanding != null) {
+                if (antibanding.contains(Camera.Parameters.ANTIBANDING_AUTO)) {
+                    parameters.setAntibanding(Camera.Parameters.ANTIBANDING_AUTO);
+                } else if (antibanding.contains(Camera.Parameters.ANTIBANDING_60HZ)) {
+                    parameters.setAntibanding(Camera.Parameters.ANTIBANDING_60HZ);
+                }
+            }
+
+            List<String> colorEffects = parameters.getSupportedColorEffects();
+            if (colorEffects != null && colorEffects.contains(Camera.Parameters.EFFECT_NONE)) {
+                parameters.setColorEffect(Camera.Parameters.EFFECT_NONE);
+            }
+
+            applyCenterMetering(parameters);
+            applySafeVendorQualityHints(parameters);
 
             if (parameters.isZoomSupported()) {
                 zoomValue = Math.max(0, Math.min(zoomValue, parameters.getMaxZoom()));
@@ -825,6 +870,54 @@ public class MainActivity extends Activity implements SurfaceHolder.Callback {
             camera.setParameters(parameters);
         } catch (Exception ignored) {
             // Alguns sensores recusam parte dos parâmetros. Mantemos a câmera funcionando.
+        }
+    }
+
+    private Camera.Size chooseBestPreviewSize(Camera.Parameters parameters, boolean videoMode) {
+        try {
+            if (videoMode) {
+                Camera.Size preferred = parameters.getPreferredPreviewSizeForVideo();
+                if (preferred != null) return preferred;
+            }
+            List<Camera.Size> sizes = parameters.getSupportedPreviewSizes();
+            if (sizes == null || sizes.isEmpty()) return null;
+            return Collections.max(sizes, Comparator.comparingInt(size -> size.width * size.height));
+        } catch (Exception ignored) {
+            return null;
+        }
+    }
+
+    private void applyCenterMetering(Camera.Parameters parameters) {
+        try {
+            ArrayList<Camera.Area> center = new ArrayList<>();
+            center.add(new Camera.Area(new Rect(-250, -250, 250, 250), 900));
+            if (parameters.getMaxNumMeteringAreas() > 0) {
+                parameters.setMeteringAreas(center);
+            }
+            if (parameters.getMaxNumFocusAreas() > 0) {
+                parameters.setFocusAreas(center);
+            }
+        } catch (Exception ignored) {
+        }
+    }
+
+    private void applySafeVendorQualityHints(Camera.Parameters parameters) {
+        trySetVendorParameter(parameters, "sharpness", "max", "sharpness-max", "max-sharpness");
+        trySetVendorParameter(parameters, "denoise", "denoise-on", null, null);
+        trySetVendorParameter(parameters, "auto-exposure", "center-weighted", null, null);
+        trySetVendorParameter(parameters, "video-stabilization", "true", null, null);
+    }
+
+    private void trySetVendorParameter(Camera.Parameters parameters, String key, String value, String altMaxKey, String altLegacyMaxKey) {
+        try {
+            if (parameters.get(key) != null) {
+                parameters.set(key, value);
+                return;
+            }
+            String maxValue = altMaxKey != null ? parameters.get(altMaxKey) : null;
+            if (maxValue == null && altLegacyMaxKey != null) maxValue = parameters.get(altLegacyMaxKey);
+            if (maxValue != null) parameters.set(key, maxValue);
+        } catch (Exception ignored) {
         }
     }
 
