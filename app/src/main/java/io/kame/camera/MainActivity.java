@@ -4,13 +4,17 @@ import android.Manifest;
 import android.app.Activity;
 import android.content.ContentResolver;
 import android.content.ContentValues;
+import android.content.Context;
 import android.content.res.ColorStateList;
 import android.content.res.Configuration;
 import android.content.pm.PackageManager;
+import android.graphics.Canvas;
 import android.graphics.Color;
 import android.graphics.ImageFormat;
 import android.graphics.Rect;
+import android.graphics.RectF;
 import android.graphics.Typeface;
+import android.graphics.Paint;
 import android.graphics.drawable.GradientDrawable;
 import android.hardware.Camera;
 import android.media.CamcorderProfile;
@@ -63,6 +67,7 @@ public class MainActivity extends Activity implements SurfaceHolder.Callback {
     private Button videoModeButton;
     private Button switchButton;
     private Button flashButton;
+    private Button monitorButton;
     private Button exposureDownButton;
     private Button focusButton;
     private Button exposureUpButton;
@@ -72,7 +77,15 @@ public class MainActivity extends Activity implements SurfaceHolder.Callback {
     private Button bitrateSettingButton;
     private Button fpsSettingButton;
     private Button stabilizationSettingButton;
+    private Button gridSettingButton;
+    private Button guidesSettingButton;
+    private Button zebraSettingButton;
+    private Button focusAssistSettingButton;
+    private Button timecodeSettingButton;
+    private Button audioMetersSettingButton;
+    private Button sensorInfoSettingButton;
     private FrameLayout settingsPanel;
+    private MonitorOverlayView monitorOverlay;
 
     private Camera camera;
     private SurfaceHolder surfaceHolder;
@@ -97,10 +110,24 @@ public class MainActivity extends Activity implements SurfaceHolder.Callback {
     private final Runnable hideZoomSliderRunnable = () -> {
         if (zoomSlider != null) zoomSlider.setVisibility(View.GONE);
     };
+    private final Runnable monitorTickerRunnable = new Runnable() {
+        @Override
+        public void run() {
+            if (monitorOverlay != null) monitorOverlay.invalidate();
+            uiHandler.postDelayed(this, 500);
+        }
+    };
     private int videoQualityMode = 0;
     private int fpsMode = 0;
     private boolean boostedBitrate = false;
     private boolean videoStabilizationEnabled = true;
+    private boolean gridEnabled = false;
+    private boolean frameGuidesEnabled = false;
+    private boolean zebraEnabled = false;
+    private boolean focusAssistEnabled = false;
+    private boolean timecodeEnabled = false;
+    private boolean audioMetersEnabled = false;
+    private long recordStartMillis = 0L;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -119,6 +146,7 @@ public class MainActivity extends Activity implements SurfaceHolder.Callback {
     protected void onPause() {
         super.onPause();
         if (recording) stopVideo();
+        uiHandler.removeCallbacks(monitorTickerRunnable);
         releaseCamera();
     }
 
@@ -126,6 +154,8 @@ public class MainActivity extends Activity implements SurfaceHolder.Callback {
     protected void onResume() {
         super.onResume();
         enableImmersiveMode();
+        uiHandler.removeCallbacks(monitorTickerRunnable);
+        uiHandler.post(monitorTickerRunnable);
         if (hasRequiredPermissions()) openCameraWhenReady();
     }
 
@@ -207,6 +237,12 @@ public class MainActivity extends Activity implements SurfaceHolder.Callback {
                 FrameLayout.LayoutParams.MATCH_PARENT
         ));
 
+        monitorOverlay = new MonitorOverlayView(this);
+        root.addView(monitorOverlay, new FrameLayout.LayoutParams(
+                FrameLayout.LayoutParams.MATCH_PARENT,
+                FrameLayout.LayoutParams.MATCH_PARENT
+        ));
+
         statusText = new TextView(this);
         statusText.setText("Kame Camera • qualidade alta nativa");
         statusText.setTextColor(Color.WHITE);
@@ -281,6 +317,7 @@ public class MainActivity extends Activity implements SurfaceHolder.Callback {
         });
         switchButton = capsuleActionButton("VIRAR", this::switchCamera);
         flashButton = capsuleActionButton("FLASH", this::toggleFlash);
+        monitorButton = capsuleActionButton("HUD", this::toggleHud);
         exposureDownButton = capsuleActionButton("EV -", () -> changeExposure(-1));
         focusButton = capsuleActionButton("FOCO", this::triggerAutoFocus);
         exposureUpButton = capsuleActionButton("EV +", () -> changeExposure(1));
@@ -290,6 +327,7 @@ public class MainActivity extends Activity implements SurfaceHolder.Callback {
         actionsRow.addView(videoModeButton);
         actionsRow.addView(switchButton);
         actionsRow.addView(flashButton);
+        actionsRow.addView(monitorButton);
         actionsRow.addView(exposureDownButton);
         actionsRow.addView(focusButton);
         actionsRow.addView(exposureUpButton);
@@ -430,7 +468,7 @@ public class MainActivity extends Activity implements SurfaceHolder.Callback {
         card.setOnClickListener(view -> { });
 
         TextView title = new TextView(this);
-        title.setText("Configurações de vídeo");
+        title.setText("Configurações profissionais");
         title.setTextColor(0xFF171E19);
         title.setTextSize(20f);
         title.setTypeface(Typeface.create("sans-serif-black", Typeface.BOLD));
@@ -446,11 +484,25 @@ public class MainActivity extends Activity implements SurfaceHolder.Callback {
         bitrateSettingButton = settingsOptionButton("", this::toggleBoostedBitrate);
         fpsSettingButton = settingsOptionButton("", this::cycleFpsMode);
         stabilizationSettingButton = settingsOptionButton("", this::toggleVideoStabilization);
+        gridSettingButton = settingsOptionButton("", this::toggleGridOverlay);
+        guidesSettingButton = settingsOptionButton("", this::toggleFrameGuides);
+        zebraSettingButton = settingsOptionButton("", this::toggleZebraOverlay);
+        focusAssistSettingButton = settingsOptionButton("", this::toggleFocusAssist);
+        timecodeSettingButton = settingsOptionButton("", this::toggleTimecodeOverlay);
+        audioMetersSettingButton = settingsOptionButton("", this::toggleAudioMeters);
+        sensorInfoSettingButton = settingsOptionButton("INFO DO SENSOR", this::showSensorInfo);
         Button closeButton = settingsOptionButton("FECHAR", this::closeVideoSettings);
         card.addView(qualitySettingButton);
         card.addView(bitrateSettingButton);
         card.addView(fpsSettingButton);
         card.addView(stabilizationSettingButton);
+        card.addView(gridSettingButton);
+        card.addView(guidesSettingButton);
+        card.addView(zebraSettingButton);
+        card.addView(focusAssistSettingButton);
+        card.addView(timecodeSettingButton);
+        card.addView(audioMetersSettingButton);
+        card.addView(sensorInfoSettingButton);
         card.addView(closeButton);
         updateVideoSettingsLabels();
 
@@ -484,9 +536,9 @@ public class MainActivity extends Activity implements SurfaceHolder.Callback {
         });
         LinearLayout.LayoutParams params = new LinearLayout.LayoutParams(
                 LinearLayout.LayoutParams.MATCH_PARENT,
-                dp(48)
+                dp(42)
         );
-        params.topMargin = dp(8);
+        params.topMargin = dp(6);
         button.setLayoutParams(params);
         return button;
     }
@@ -526,7 +578,92 @@ public class MainActivity extends Activity implements SurfaceHolder.Callback {
         if (bitrateSettingButton != null) bitrateSettingButton.setText("Bitrate: " + (boostedBitrate ? "REFORÇADO (teste)" : "NORMAL"));
         if (fpsSettingButton != null) fpsSettingButton.setText("FPS: " + fpsLabel() + " (seguro)");
         if (stabilizationSettingButton != null) stabilizationSettingButton.setText("Estabilização: " + (videoStabilizationEnabled ? "ON" : "OFF"));
+        if (gridSettingButton != null) gridSettingButton.setText("Grade 3x3: " + onOff(gridEnabled));
+        if (guidesSettingButton != null) guidesSettingButton.setText("Guias 16:9: " + onOff(frameGuidesEnabled));
+        if (zebraSettingButton != null) zebraSettingButton.setText("Zebra: " + onOff(zebraEnabled));
+        if (focusAssistSettingButton != null) focusAssistSettingButton.setText("Focus assist: " + onOff(focusAssistEnabled));
+        if (timecodeSettingButton != null) timecodeSettingButton.setText("Timecode: " + onOff(timecodeEnabled));
+        if (audioMetersSettingButton != null) audioMetersSettingButton.setText("Medidores de áudio: " + onOff(audioMetersEnabled));
+        updateMonitorButtonState();
         updateAnalogInterface();
+        if (monitorOverlay != null) monitorOverlay.invalidate();
+    }
+
+    private String onOff(boolean enabled) {
+        return enabled ? "ON" : "OFF";
+    }
+
+    private void toggleHud() {
+        boolean enable = !(gridEnabled || frameGuidesEnabled || zebraEnabled || focusAssistEnabled || timecodeEnabled || audioMetersEnabled);
+        gridEnabled = enable;
+        frameGuidesEnabled = enable;
+        focusAssistEnabled = enable;
+        timecodeEnabled = enable;
+        audioMetersEnabled = enable;
+        zebraEnabled = false;
+        updateVideoSettingsLabels();
+    }
+
+    private void toggleGridOverlay() {
+        gridEnabled = !gridEnabled;
+        updateVideoSettingsLabels();
+    }
+
+    private void toggleFrameGuides() {
+        frameGuidesEnabled = !frameGuidesEnabled;
+        updateVideoSettingsLabels();
+    }
+
+    private void toggleZebraOverlay() {
+        zebraEnabled = !zebraEnabled;
+        updateVideoSettingsLabels();
+    }
+
+    private void toggleFocusAssist() {
+        focusAssistEnabled = !focusAssistEnabled;
+        updateVideoSettingsLabels();
+    }
+
+    private void toggleTimecodeOverlay() {
+        timecodeEnabled = !timecodeEnabled;
+        updateVideoSettingsLabels();
+    }
+
+    private void toggleAudioMeters() {
+        audioMetersEnabled = !audioMetersEnabled;
+        updateVideoSettingsLabels();
+    }
+
+    private void updateMonitorButtonState() {
+        if (monitorButton == null) return;
+        boolean enabled = gridEnabled || frameGuidesEnabled || zebraEnabled || focusAssistEnabled || timecodeEnabled || audioMetersEnabled;
+        monitorButton.setText(enabled ? "HUD ON" : "HUD");
+        applyModeButtonState(monitorButton, enabled);
+    }
+
+    private void showSensorInfo() {
+        String message = "Sensor: " + currentPictureSizeLabel() + " • Vídeo: " + currentVideoProfileLabel() + " • Zoom: " + currentZoomLabel();
+        toast(message);
+    }
+
+    private String currentPictureSizeLabel() {
+        try {
+            if (camera != null) {
+                Camera.Size size = camera.getParameters().getPictureSize();
+                if (size != null) return size.width + "x" + size.height;
+            }
+        } catch (Exception ignored) {
+        }
+        return "desconhecido";
+    }
+
+    private String currentVideoProfileLabel() {
+        try {
+            CamcorderProfile profile = getBestProfile();
+            return profile.videoFrameWidth + "x" + profile.videoFrameHeight + " @" + profile.videoFrameRate + "fps";
+        } catch (Exception ignored) {
+            return videoQualityLabel();
+        }
     }
 
     private String videoQualityLabel() {
@@ -844,7 +981,6 @@ public class MainActivity extends Activity implements SurfaceHolder.Callback {
             }
 
             applyCenterMetering(parameters);
-            applySafeVendorQualityHints(parameters);
 
             if (parameters.isZoomSupported()) {
                 zoomValue = Math.max(0, Math.min(zoomValue, parameters.getMaxZoom()));
@@ -901,25 +1037,6 @@ public class MainActivity extends Activity implements SurfaceHolder.Callback {
         }
     }
 
-    private void applySafeVendorQualityHints(Camera.Parameters parameters) {
-        trySetVendorParameter(parameters, "sharpness", "max", "sharpness-max", "max-sharpness");
-        trySetVendorParameter(parameters, "denoise", "denoise-on", null, null);
-        trySetVendorParameter(parameters, "auto-exposure", "center-weighted", null, null);
-        trySetVendorParameter(parameters, "video-stabilization", "true", null, null);
-    }
-
-    private void trySetVendorParameter(Camera.Parameters parameters, String key, String value, String altMaxKey, String altLegacyMaxKey) {
-        try {
-            if (parameters.get(key) != null) {
-                parameters.set(key, value);
-                return;
-            }
-            String maxValue = altMaxKey != null ? parameters.get(altMaxKey) : null;
-            if (maxValue == null && altLegacyMaxKey != null) maxValue = parameters.get(altLegacyMaxKey);
-            if (maxValue != null) parameters.set(key, maxValue);
-        } catch (Exception ignored) {
-        }
-    }
 
     private void takePhoto() {
         if (camera == null || recording || photoInProgress) return;
@@ -1051,6 +1168,7 @@ public class MainActivity extends Activity implements SurfaceHolder.Callback {
             mediaRecorder.prepare();
             mediaRecorder.start();
 
+            recordStartMillis = System.currentTimeMillis();
             recording = true;
             if (videoModeButton != null) {
                 videoModeButton.setText("PARAR");
@@ -1081,6 +1199,7 @@ public class MainActivity extends Activity implements SurfaceHolder.Callback {
             status("Gravação finalizada com aviso: " + error.getMessage());
         } finally {
             recording = false;
+            recordStartMillis = 0L;
             if (videoModeButton != null) {
                 videoModeButton.setText("VÍDEO");
                 applyModeButtonState(videoModeButton, videoMode);
@@ -1354,4 +1473,133 @@ public class MainActivity extends Activity implements SurfaceHolder.Callback {
     private void toast(String message) {
         Toast.makeText(this, message, Toast.LENGTH_SHORT).show();
     }
+
+    private String elapsedRecordTime() {
+        long elapsed = recordStartMillis > 0L ? System.currentTimeMillis() - recordStartMillis : 0L;
+        long totalSeconds = elapsed / 1000L;
+        long hours = totalSeconds / 3600L;
+        long minutes = (totalSeconds % 3600L) / 60L;
+        long seconds = totalSeconds % 60L;
+        return String.format(Locale.US, "%02d:%02d:%02d", hours, minutes, seconds);
+    }
+
+    private class MonitorOverlayView extends View {
+        private final Paint paint = new Paint(Paint.ANTI_ALIAS_FLAG);
+        private final RectF rect = new RectF();
+
+        MonitorOverlayView(Context context) {
+            super(context);
+            setWillNotDraw(false);
+        }
+
+        @Override
+        protected void onDraw(Canvas canvas) {
+            super.onDraw(canvas);
+            int width = getWidth();
+            int height = getHeight();
+            if (width <= 0 || height <= 0) return;
+            if (gridEnabled) drawGrid(canvas, width, height);
+            if (frameGuidesEnabled) drawFrameGuide(canvas, width, height);
+            if (focusAssistEnabled) drawFocusAssist(canvas, width, height);
+            if (zebraEnabled) drawZebra(canvas, width, height);
+            if (timecodeEnabled) drawTimecode(canvas, width, height);
+            if (audioMetersEnabled) drawAudioMeters(canvas, width, height);
+        }
+
+        private void drawGrid(Canvas canvas, int width, int height) {
+            paint.setStyle(Paint.Style.STROKE);
+            paint.setStrokeWidth(dp(1));
+            paint.setColor(0x66B7C6C2);
+            int bottomLimit = height - dp(108);
+            for (int i = 1; i < 3; i++) {
+                float x = width * i / 3f;
+                canvas.drawLine(x, dp(16), x, bottomLimit, paint);
+                float y = dp(16) + (bottomLimit - dp(16)) * i / 3f;
+                canvas.drawLine(dp(14), y, width - dp(14), y, paint);
+            }
+        }
+
+        private void drawFrameGuide(Canvas canvas, int width, int height) {
+            int bottomLimit = height - dp(116);
+            float guideWidth = width * 0.88f;
+            float guideHeight = guideWidth * 9f / 16f;
+            if (guideHeight > bottomLimit * 0.72f) {
+                guideHeight = bottomLimit * 0.72f;
+                guideWidth = guideHeight * 16f / 9f;
+            }
+            float left = (width - guideWidth) / 2f;
+            float top = (bottomLimit - guideHeight) / 2f + dp(16);
+            rect.set(left, top, left + guideWidth, top + guideHeight);
+            paint.setStyle(Paint.Style.STROKE);
+            paint.setStrokeWidth(dp(2));
+            paint.setColor(0x88EEEBE3);
+            canvas.drawRoundRect(rect, dp(18), dp(18), paint);
+        }
+
+        private void drawFocusAssist(Canvas canvas, int width, int height) {
+            float cx = width / 2f;
+            float cy = (height - dp(120)) / 2f;
+            float size = dp(42);
+            paint.setStyle(Paint.Style.STROKE);
+            paint.setStrokeWidth(dp(2));
+            paint.setColor(0xDDCA0013);
+            canvas.drawLine(cx - size, cy, cx - dp(16), cy, paint);
+            canvas.drawLine(cx + dp(16), cy, cx + size, cy, paint);
+            rect.set(cx - dp(18), cy - dp(12), cx + dp(18), cy + dp(12));
+            canvas.drawRoundRect(rect, dp(6), dp(6), paint);
+        }
+
+        private void drawZebra(Canvas canvas, int width, int height) {
+            paint.setStyle(Paint.Style.STROKE);
+            paint.setStrokeWidth(dp(2));
+            paint.setColor(0x88EEEBE3);
+            int top = dp(54);
+            int right = width - dp(18);
+            int left = width - dp(128);
+            int bottom = top + dp(64);
+            for (int x = left - dp(64); x < right; x += dp(12)) {
+                canvas.drawLine(x, bottom, x + dp(64), top, paint);
+            }
+            paint.setStyle(Paint.Style.FILL);
+            paint.setTextSize(dp(10));
+            paint.setTypeface(Typeface.create("sans-serif", Typeface.BOLD));
+            paint.setColor(0xFFEEEBE3);
+            canvas.drawText("ZEBRA", left, bottom + dp(16), paint);
+        }
+
+        private void drawTimecode(Canvas canvas, int width, int height) {
+            String text = recording ? "REC  " + elapsedRecordTime() : "TC  " + new SimpleDateFormat("HH:mm:ss", Locale.US).format(new Date());
+            paint.setTextSize(dp(12));
+            paint.setTypeface(Typeface.create("sans-serif", Typeface.BOLD));
+            float textWidth = paint.measureText(text);
+            rect.set(dp(14), dp(26), dp(34) + textWidth, dp(56));
+            paint.setStyle(Paint.Style.FILL);
+            paint.setColor(0xDD171E19);
+            canvas.drawRoundRect(rect, dp(15), dp(15), paint);
+            paint.setColor(recording ? 0xFFCA0013 : 0xFFB7C6C2);
+            canvas.drawCircle(dp(28), dp(41), dp(4), paint);
+            paint.setColor(Color.WHITE);
+            canvas.drawText(text, dp(38), dp(46), paint);
+        }
+
+        private void drawAudioMeters(Canvas canvas, int width, int height) {
+            int baseX = width - dp(44);
+            int bottom = height - dp(118);
+            int maxHeight = dp(94);
+            long t = System.currentTimeMillis() / 120L;
+            int leftLevel = recording ? (int) (maxHeight * (0.28f + ((t % 6) / 10f))) : dp(18);
+            int rightLevel = recording ? (int) (maxHeight * (0.24f + (((t + 3) % 6) / 10f))) : dp(14);
+            paint.setStyle(Paint.Style.FILL);
+            paint.setColor(0x55171E19);
+            canvas.drawRoundRect(new RectF(baseX - dp(8), bottom - maxHeight - dp(8), baseX + dp(28), bottom + dp(8)), dp(12), dp(12), paint);
+            paint.setColor(0xFFB7C6C2);
+            canvas.drawRoundRect(new RectF(baseX, bottom - leftLevel, baseX + dp(8), bottom), dp(4), dp(4), paint);
+            canvas.drawRoundRect(new RectF(baseX + dp(14), bottom - rightLevel, baseX + dp(22), bottom), dp(4), dp(4), paint);
+            if (recording) {
+                paint.setColor(0xFFCA0013);
+                canvas.drawCircle(baseX + dp(26), bottom - maxHeight, dp(4), paint);
+            }
+        }
+    }
+
 }
