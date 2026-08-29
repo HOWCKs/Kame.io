@@ -73,11 +73,14 @@ public class MainActivity extends Activity implements SurfaceHolder.Callback {
     private Button exposureUpButton;
     private Button settingsButton;
     private SeekBar zoomSlider;
+    private Button photoSizeSettingButton;
     private Button qualitySettingButton;
     private Button codecSettingButton;
     private Button bitrateSettingButton;
     private Button fpsSettingButton;
     private Button stabilizationSettingButton;
+    private Button flashModeSettingButton;
+    private Button antibandingSettingButton;
     private Button aeLockSettingButton;
     private Button awbLockSettingButton;
     private Button whiteBalanceSettingButton;
@@ -122,6 +125,7 @@ public class MainActivity extends Activity implements SurfaceHolder.Callback {
             uiHandler.postDelayed(this, 500);
         }
     };
+    private int photoSizeMode = 0;
     private int videoQualityMode = 0;
     private int codecMode = 0;
     private int fpsMode = 0;
@@ -129,6 +133,8 @@ public class MainActivity extends Activity implements SurfaceHolder.Callback {
     private boolean videoStabilizationEnabled = true;
     private boolean autoExposureLocked = false;
     private boolean autoWhiteBalanceLocked = false;
+    private String selectedFlashMode = null;
+    private String selectedAntibanding = null;
     private String selectedWhiteBalance = null;
     private String selectedFocusMode = null;
     private String selectedSceneMode = null;
@@ -494,11 +500,14 @@ public class MainActivity extends Activity implements SurfaceHolder.Callback {
                 LinearLayout.LayoutParams.WRAP_CONTENT
         ));
 
+        photoSizeSettingButton = settingsOptionButton("", this::cyclePhotoSizeMode);
         qualitySettingButton = settingsOptionButton("", this::cycleVideoQuality);
         codecSettingButton = settingsOptionButton("", this::cycleCodecMode);
         bitrateSettingButton = settingsOptionButton("", this::cycleBitrateMode);
         fpsSettingButton = settingsOptionButton("", this::cycleFpsMode);
         stabilizationSettingButton = settingsOptionButton("", this::toggleVideoStabilization);
+        flashModeSettingButton = settingsOptionButton("", this::cycleFlashMode);
+        antibandingSettingButton = settingsOptionButton("", this::cycleAntibanding);
         aeLockSettingButton = settingsOptionButton("", this::toggleAutoExposureLock);
         awbLockSettingButton = settingsOptionButton("", this::toggleAutoWhiteBalanceLock);
         whiteBalanceSettingButton = settingsOptionButton("", this::cycleWhiteBalance);
@@ -511,11 +520,14 @@ public class MainActivity extends Activity implements SurfaceHolder.Callback {
         timecodeSettingButton = settingsOptionButton("", this::toggleTimecodeOverlay);
         sensorInfoSettingButton = settingsOptionButton("INFO DO SENSOR", this::showSensorInfo);
         Button closeButton = settingsOptionButton("FECHAR", this::closeVideoSettings);
+        card.addView(photoSizeSettingButton);
         card.addView(qualitySettingButton);
         card.addView(codecSettingButton);
         card.addView(bitrateSettingButton);
         card.addView(fpsSettingButton);
         card.addView(stabilizationSettingButton);
+        card.addView(flashModeSettingButton);
+        card.addView(antibandingSettingButton);
         card.addView(aeLockSettingButton);
         card.addView(awbLockSettingButton);
         card.addView(whiteBalanceSettingButton);
@@ -577,6 +589,12 @@ public class MainActivity extends Activity implements SurfaceHolder.Callback {
         enableImmersiveMode();
     }
 
+    private void cyclePhotoSizeMode() {
+        photoSizeMode = (photoSizeMode + 1) % 3;
+        applyHighQualityParameters(videoMode);
+        updateVideoSettingsLabels();
+    }
+
     private void cycleVideoQuality() {
         videoQualityMode = (videoQualityMode + 1) % 4;
         updateVideoSettingsLabels();
@@ -603,11 +621,14 @@ public class MainActivity extends Activity implements SurfaceHolder.Callback {
     }
 
     private void updateVideoSettingsLabels() {
+        if (photoSizeSettingButton != null) photoSizeSettingButton.setText("Foto: " + photoSizeLabel());
         if (qualitySettingButton != null) qualitySettingButton.setText("Qualidade: " + videoQualityLabel());
         if (codecSettingButton != null) codecSettingButton.setText("Codec: " + codecLabel());
         if (bitrateSettingButton != null) bitrateSettingButton.setText("Bitrate: " + bitrateLabel());
         if (fpsSettingButton != null) fpsSettingButton.setText("FPS: " + fpsLabel() + " (perfil real)");
         if (stabilizationSettingButton != null) stabilizationSettingButton.setText("Estabilização: " + onOff(videoStabilizationEnabled));
+        if (flashModeSettingButton != null) flashModeSettingButton.setText("Flash: " + cameraValueLabel(selectedFlashMode, torchEnabled ? "TORCH" : "AUTO/OFF"));
+        if (antibandingSettingButton != null) antibandingSettingButton.setText("Anti-banding: " + cameraValueLabel(selectedAntibanding, "AUTO/60HZ"));
         if (aeLockSettingButton != null) aeLockSettingButton.setText("AE Lock: " + onOff(autoExposureLocked));
         if (awbLockSettingButton != null) awbLockSettingButton.setText("AWB Lock: " + onOff(autoWhiteBalanceLocked));
         if (whiteBalanceSettingButton != null) whiteBalanceSettingButton.setText("White balance: " + cameraValueLabel(selectedWhiteBalance, "AUTO"));
@@ -634,6 +655,28 @@ public class MainActivity extends Activity implements SurfaceHolder.Callback {
         histogramEnabled = enable;
         timecodeEnabled = enable;
         zebraEnabled = false;
+        updateVideoSettingsLabels();
+    }
+
+    private void cycleFlashMode() {
+        try {
+            if (camera == null) return;
+            selectedFlashMode = nextSupportedValue(camera.getParameters().getSupportedFlashModes(), selectedFlashMode);
+            torchEnabled = Camera.Parameters.FLASH_MODE_TORCH.equals(selectedFlashMode);
+            applyHighQualityParameters(videoMode);
+            flashButton.setText(torchEnabled ? "FLASH ON" : "FLASH");
+        } catch (Exception ignored) {
+        }
+        updateVideoSettingsLabels();
+    }
+
+    private void cycleAntibanding() {
+        try {
+            if (camera == null) return;
+            selectedAntibanding = nextSupportedValue(camera.getParameters().getSupportedAntibanding(), selectedAntibanding);
+            applyHighQualityParameters(videoMode);
+        } catch (Exception ignored) {
+        }
         updateVideoSettingsLabels();
     }
 
@@ -749,6 +792,14 @@ public class MainActivity extends Activity implements SurfaceHolder.Callback {
         }
     }
 
+    private String photoSizeLabel() {
+        switch (photoSizeMode) {
+            case 1: return "16:9 máxima";
+            case 2: return "4:3 máxima";
+            default: return "máxima do sensor";
+        }
+    }
+
     private String codecLabel() {
         switch (codecMode) {
             case 1: return "H.264";
@@ -777,7 +828,7 @@ public class MainActivity extends Activity implements SurfaceHolder.Callback {
     private String fpsLabel() {
         switch (fpsMode) {
             case 1: return "30";
-            case 2: return "60 se suportado";
+            case 2: return "Alta velocidade se suportado";
             default: return "Automático";
         }
     }
@@ -1030,10 +1081,9 @@ public class MainActivity extends Activity implements SurfaceHolder.Callback {
                 parameters.setRotation(calculateMediaOrientation());
             }
 
-            List<Camera.Size> pictureSizes = parameters.getSupportedPictureSizes();
-            if (pictureSizes != null && !pictureSizes.isEmpty()) {
-                Camera.Size best = Collections.max(pictureSizes, Comparator.comparingInt(size -> size.width * size.height));
-                parameters.setPictureSize(best.width, best.height);
+            Camera.Size pictureSize = choosePictureSize(parameters);
+            if (pictureSize != null) {
+                parameters.setPictureSize(pictureSize.width, pictureSize.height);
             }
 
             Camera.Size previewSize = chooseBestPreviewSize(parameters, videoMode);
@@ -1083,7 +1133,9 @@ public class MainActivity extends Activity implements SurfaceHolder.Callback {
 
             List<String> antibanding = parameters.getSupportedAntibanding();
             if (antibanding != null) {
-                if (antibanding.contains(Camera.Parameters.ANTIBANDING_AUTO)) {
+                if (selectedAntibanding != null && antibanding.contains(selectedAntibanding)) {
+                    parameters.setAntibanding(selectedAntibanding);
+                } else if (antibanding.contains(Camera.Parameters.ANTIBANDING_AUTO)) {
                     parameters.setAntibanding(Camera.Parameters.ANTIBANDING_AUTO);
                 } else if (antibanding.contains(Camera.Parameters.ANTIBANDING_60HZ)) {
                     parameters.setAntibanding(Camera.Parameters.ANTIBANDING_60HZ);
@@ -1114,14 +1166,48 @@ public class MainActivity extends Activity implements SurfaceHolder.Callback {
             }
 
             List<String> flashModes = parameters.getSupportedFlashModes();
-            if (flashModes != null && flashModes.contains(Camera.Parameters.FLASH_MODE_TORCH)) {
-                parameters.setFlashMode(torchEnabled ? Camera.Parameters.FLASH_MODE_TORCH : Camera.Parameters.FLASH_MODE_OFF);
+            if (flashModes != null) {
+                if (torchEnabled && flashModes.contains(Camera.Parameters.FLASH_MODE_TORCH)) {
+                    parameters.setFlashMode(Camera.Parameters.FLASH_MODE_TORCH);
+                } else if (selectedFlashMode != null && flashModes.contains(selectedFlashMode)) {
+                    parameters.setFlashMode(selectedFlashMode);
+                } else if (flashModes.contains(Camera.Parameters.FLASH_MODE_OFF)) {
+                    parameters.setFlashMode(Camera.Parameters.FLASH_MODE_OFF);
+                }
             }
 
             camera.setParameters(parameters);
         } catch (Exception ignored) {
             // Alguns sensores recusam parte dos parâmetros. Mantemos a câmera funcionando.
         }
+    }
+
+    private Camera.Size choosePictureSize(Camera.Parameters parameters) {
+        try {
+            List<Camera.Size> sizes = parameters.getSupportedPictureSizes();
+            if (sizes == null || sizes.isEmpty()) return null;
+            if (photoSizeMode == 1) return chooseLargestAspectSize(sizes, 16f / 9f);
+            if (photoSizeMode == 2) return chooseLargestAspectSize(sizes, 4f / 3f);
+            return Collections.max(sizes, Comparator.comparingInt(size -> size.width * size.height));
+        } catch (Exception ignored) {
+            return null;
+        }
+    }
+
+    private Camera.Size chooseLargestAspectSize(List<Camera.Size> sizes, float targetAspect) {
+        Camera.Size best = null;
+        long bestPixels = -1;
+        for (Camera.Size size : sizes) {
+            float aspect = size.width / (float) size.height;
+            if (Math.abs(aspect - targetAspect) > 0.08f) continue;
+            long pixels = (long) size.width * (long) size.height;
+            if (pixels > bestPixels) {
+                best = size;
+                bestPixels = pixels;
+            }
+        }
+        if (best != null) return best;
+        return Collections.max(sizes, Comparator.comparingInt(size -> size.width * size.height));
     }
 
     private Camera.Size chooseBestPreviewSize(Camera.Parameters parameters, boolean videoMode) {
@@ -1443,6 +1529,17 @@ public class MainActivity extends Activity implements SurfaceHolder.Callback {
     }
 
     private CamcorderProfile getBestProfile() {
+        if (fpsMode == 2) {
+            int[] highSpeed = new int[]{
+                    CamcorderProfile.QUALITY_HIGH_SPEED_2160P,
+                    CamcorderProfile.QUALITY_HIGH_SPEED_1080P,
+                    CamcorderProfile.QUALITY_HIGH_SPEED_720P,
+                    CamcorderProfile.QUALITY_HIGH_SPEED_HIGH
+            };
+            for (int quality : highSpeed) {
+                if (CamcorderProfile.hasProfile(cameraId, quality)) return CamcorderProfile.get(cameraId, quality);
+            }
+        }
         int[] qualities;
         switch (videoQualityMode) {
             case 1:
@@ -1507,6 +1604,7 @@ public class MainActivity extends Activity implements SurfaceHolder.Callback {
         cameraId = next;
         zoomValue = 0;
         exposureValue = 0;
+        focusMeteringAreas = null;
         torchEnabled = false;
         flashButton.setText("FLASH");
         updateAnalogInterface();
@@ -1516,6 +1614,7 @@ public class MainActivity extends Activity implements SurfaceHolder.Callback {
     private void toggleFlash() {
         if (camera == null) return;
         torchEnabled = !torchEnabled;
+        if (torchEnabled) selectedFlashMode = Camera.Parameters.FLASH_MODE_TORCH;
         applyHighQualityParameters(false);
         flashButton.setText(torchEnabled ? "FLASH ON" : "FLASH");
         updateAnalogInterface();
