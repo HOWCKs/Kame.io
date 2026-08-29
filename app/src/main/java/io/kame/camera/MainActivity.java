@@ -254,8 +254,8 @@ public class MainActivity extends Activity implements SurfaceHolder.Callback {
         controls.setClipToPadding(false);
         controls.setPadding(dp(8), dp(8), dp(8), dp(8));
         controls.setBackground(makeCapsuleBackground());
-        controls.setElevation(dp(20));
-        controls.setTranslationZ(dp(12));
+        controls.setElevation(dp(18));
+        controls.setTranslationZ(dp(10));
 
         HorizontalScrollView scrollView = new HorizontalScrollView(this);
         scrollView.setHorizontalScrollBarEnabled(false);
@@ -359,7 +359,7 @@ public class MainActivity extends Activity implements SurfaceHolder.Callback {
     private Button capsuleActionButton(String label, Runnable action) {
         Button button = new Button(this);
         button.setText(label);
-        button.setTextColor(0xFFB7C6C2);
+        button.setTextColor(0xFF171E19);
         button.setTextSize(12.2f);
         button.setTypeface(Typeface.create("sans-serif", Typeface.BOLD));
         button.setAllCaps(false);
@@ -368,8 +368,8 @@ public class MainActivity extends Activity implements SurfaceHolder.Callback {
         button.setMinHeight(dp(48));
         button.setPadding(dp(12), 0, dp(12), dp(1));
         button.setBackground(makeButtonBackground(false));
-        button.setElevation(dp(5));
-        button.setTranslationZ(dp(2));
+        button.setElevation(dp(9));
+        button.setTranslationZ(dp(4));
         LinearLayout.LayoutParams params = new LinearLayout.LayoutParams(LinearLayout.LayoutParams.WRAP_CONTENT, dp(48));
         params.leftMargin = dp(2);
         params.rightMargin = dp(2);
@@ -391,27 +391,27 @@ public class MainActivity extends Activity implements SurfaceHolder.Callback {
 
     private void applyPhotoButtonState(boolean selected) {
         if (shutterButton == null) return;
-        shutterButton.setTextColor(selected ? Color.WHITE : 0xFFB7C6C2);
-        shutterButton.setBackground(makeButtonBackground(selected));
-        shutterButton.setElevation(selected ? dp(14) : dp(5));
-        shutterButton.setTranslationZ(selected ? dp(8) : dp(2));
+        shutterButton.setTextColor(selected ? Color.WHITE : 0xFF171E19);
+        shutterButton.setBackground(selected ? makePrimaryButtonBackground() : makeButtonBackground(false));
+        shutterButton.setElevation(selected ? dp(14) : dp(9));
+        shutterButton.setTranslationZ(selected ? dp(8) : dp(4));
         shutterButton.setScaleX(selected ? 1.045f : 1f);
         shutterButton.setScaleY(selected ? 1.045f : 1f);
     }
 
     private void applyModeButtonState(Button button, boolean selected) {
         if (button == null) return;
-        button.setTextColor(selected ? Color.WHITE : 0xFFB7C6C2);
+        button.setTextColor(selected ? Color.WHITE : 0xFF171E19);
         button.setBackground(makeButtonBackground(selected));
-        button.setElevation(selected ? dp(14) : dp(5));
-        button.setTranslationZ(selected ? dp(8) : dp(2));
+        button.setElevation(selected ? dp(14) : dp(9));
+        button.setTranslationZ(selected ? dp(8) : dp(4));
         button.setScaleX(selected ? 1.045f : 1f);
         button.setScaleY(selected ? 1.045f : 1f);
     }
 
     private FrameLayout buildVideoSettingsPanel() {
         FrameLayout overlay = new FrameLayout(this);
-        overlay.setBackgroundColor(0x99171E19);
+        overlay.setBackgroundColor(0x66171E19);
         overlay.setVisibility(View.GONE);
         overlay.setOnClickListener(view -> closeVideoSettings());
 
@@ -419,8 +419,8 @@ public class MainActivity extends Activity implements SurfaceHolder.Callback {
         card.setOrientation(LinearLayout.VERTICAL);
         card.setPadding(dp(20), dp(18), dp(20), dp(18));
         card.setBackground(makeSettingsCardBackground());
-        card.setElevation(dp(18));
-        card.setTranslationZ(dp(12));
+        card.setElevation(dp(22));
+        card.setTranslationZ(dp(14));
         card.setOnClickListener(view -> { });
 
         TextView title = new TextView(this);
@@ -469,7 +469,9 @@ public class MainActivity extends Activity implements SurfaceHolder.Callback {
         button.setAllCaps(false);
         button.setLetterSpacing(0.015f);
         button.setPadding(dp(12), 0, dp(12), 0);
-        button.setBackground(makeButtonBackground(false));
+        button.setBackground(makeSettingsButtonBackground(false));
+        button.setElevation(dp(8));
+        button.setTranslationZ(dp(4));
         button.setOnClickListener(view -> {
             tactileClick(view);
             action.run();
@@ -626,7 +628,7 @@ public class MainActivity extends Activity implements SurfaceHolder.Callback {
     private GradientDrawable makeFloatingPanelBackground() {
         GradientDrawable drawable = new GradientDrawable(
                 GradientDrawable.Orientation.TL_BR,
-                new int[]{0xF8EEEBE3, 0xF7FFFFFF, 0xF0EEEBE3}
+                new int[]{0xFFFCFBF7, 0xFFEEEBE3, 0xFFE4E0D8}
         );
         drawable.setCornerRadius(dp(40));
         drawable.setStroke(dp(1), 0x55B7C6C2);
@@ -650,20 +652,20 @@ public class MainActivity extends Activity implements SurfaceHolder.Callback {
     private GradientDrawable makeSmallPillBackground() {
         GradientDrawable drawable = new GradientDrawable(
                 GradientDrawable.Orientation.TL_BR,
-                new int[]{0x33FFFFFF, 0x18B7C6C2}
+                new int[]{0xEEF7F5EF, 0xCCEEEBE3}
         );
         drawable.setCornerRadius(dp(24));
-        drawable.setStroke(dp(1), 0x44B7C6C2);
+        drawable.setStroke(dp(1), 0x55B7C6C2);
         return drawable;
     }
 
     private GradientDrawable makeCapsuleBackground() {
         GradientDrawable drawable = new GradientDrawable(
-                GradientDrawable.Orientation.LEFT_RIGHT,
-                new int[]{0xF0171E19, 0xEA171E19, 0xF01D2520}
+                GradientDrawable.Orientation.TL_BR,
+                new int[]{0xFFFCFBF7, 0xFFF0EDE6, 0xFFE3DED5}
         );
         drawable.setCornerRadius(dp(40));
-        drawable.setStroke(dp(1), 0x44B7C6C2);
+        drawable.setStroke(dp(1), 0x55B7C6C2);
         return drawable;
     }
 
@@ -671,18 +673,40 @@ public class MainActivity extends Activity implements SurfaceHolder.Callback {
         GradientDrawable drawable;
         if (selected) {
             drawable = new GradientDrawable(
-                    GradientDrawable.Orientation.LEFT_RIGHT,
-                    new int[]{0xFF171E19, 0xFF222B25}
+                    GradientDrawable.Orientation.TL_BR,
+                    new int[]{0xFF171E19, 0xFF222B25, 0xFF171E19}
             );
-            drawable.setStroke(dp(1), 0x66B7C6C2);
+            drawable.setStroke(dp(1), 0x55B7C6C2);
         } else {
             drawable = new GradientDrawable(
-                    GradientDrawable.Orientation.TOP_BOTTOM,
-                    new int[]{0x20FFFFFF, 0x08FFFFFF}
+                    GradientDrawable.Orientation.TL_BR,
+                    new int[]{0xFFFFFFFF, 0xFFEEEBE3, 0xFFE4E0D8}
             );
-            drawable.setStroke(dp(1), 0x33B7C6C2);
+            drawable.setStroke(dp(1), 0x55B7C6C2);
         }
         drawable.setCornerRadius(dp(24));
+        return drawable;
+    }
+
+    private GradientDrawable makeSettingsButtonBackground(boolean pressed) {
+        GradientDrawable drawable = new GradientDrawable(
+                GradientDrawable.Orientation.TL_BR,
+                pressed
+                        ? new int[]{0xFFE1DDD4, 0xFFF4F2EC}
+                        : new int[]{0xFFFFFFFF, 0xFFEEEBE3, 0xFFE6E1D8}
+        );
+        drawable.setCornerRadius(dp(24));
+        drawable.setStroke(dp(1), 0x55B7C6C2);
+        return drawable;
+    }
+
+    private GradientDrawable makePrimaryButtonBackground() {
+        GradientDrawable drawable = new GradientDrawable(
+                GradientDrawable.Orientation.TL_BR,
+                new int[]{0xFFE0182A, 0xFFCA0013, 0xFFA90010}
+        );
+        drawable.setCornerRadius(dp(24));
+        drawable.setStroke(dp(1), 0xAAEEEBE3);
         return drawable;
     }
 
@@ -711,7 +735,7 @@ public class MainActivity extends Activity implements SurfaceHolder.Callback {
     private void tintZoomSlider() {
         if (zoomSlider == null) return;
         int progress = 0xFFCA0013;
-        int background = 0x55B7C6C2;
+        int background = 0x88B7C6C2;
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP) {
             zoomSlider.setProgressTintList(ColorStateList.valueOf(progress));
             zoomSlider.setThumbTintList(ColorStateList.valueOf(progress));
