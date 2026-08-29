@@ -74,15 +74,15 @@ public class MainActivity extends Activity implements SurfaceHolder.Callback {
     private Button settingsButton;
     private SeekBar zoomSlider;
     private Button qualitySettingButton;
+    private Button codecSettingButton;
     private Button bitrateSettingButton;
     private Button fpsSettingButton;
     private Button stabilizationSettingButton;
     private Button gridSettingButton;
     private Button guidesSettingButton;
+    private Button histogramSettingButton;
     private Button zebraSettingButton;
-    private Button focusAssistSettingButton;
     private Button timecodeSettingButton;
-    private Button audioMetersSettingButton;
     private Button sensorInfoSettingButton;
     private FrameLayout settingsPanel;
     private MonitorOverlayView monitorOverlay;
@@ -118,16 +118,19 @@ public class MainActivity extends Activity implements SurfaceHolder.Callback {
         }
     };
     private int videoQualityMode = 0;
+    private int codecMode = 0;
     private int fpsMode = 0;
-    private boolean boostedBitrate = false;
+    private int bitrateMode = 0;
     private boolean videoStabilizationEnabled = true;
     private boolean gridEnabled = false;
     private boolean frameGuidesEnabled = false;
+    private boolean histogramEnabled = false;
     private boolean zebraEnabled = false;
-    private boolean focusAssistEnabled = false;
     private boolean timecodeEnabled = false;
-    private boolean audioMetersEnabled = false;
     private long recordStartMillis = 0L;
+    private long lastPreviewAnalysisMillis = 0L;
+    private int[] histogramBins = new int[32];
+    private boolean[] zebraCells = new boolean[96];
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -481,27 +484,27 @@ public class MainActivity extends Activity implements SurfaceHolder.Callback {
         ));
 
         qualitySettingButton = settingsOptionButton("", this::cycleVideoQuality);
-        bitrateSettingButton = settingsOptionButton("", this::toggleBoostedBitrate);
+        codecSettingButton = settingsOptionButton("", this::cycleCodecMode);
+        bitrateSettingButton = settingsOptionButton("", this::cycleBitrateMode);
         fpsSettingButton = settingsOptionButton("", this::cycleFpsMode);
         stabilizationSettingButton = settingsOptionButton("", this::toggleVideoStabilization);
         gridSettingButton = settingsOptionButton("", this::toggleGridOverlay);
         guidesSettingButton = settingsOptionButton("", this::toggleFrameGuides);
+        histogramSettingButton = settingsOptionButton("", this::toggleHistogramOverlay);
         zebraSettingButton = settingsOptionButton("", this::toggleZebraOverlay);
-        focusAssistSettingButton = settingsOptionButton("", this::toggleFocusAssist);
         timecodeSettingButton = settingsOptionButton("", this::toggleTimecodeOverlay);
-        audioMetersSettingButton = settingsOptionButton("", this::toggleAudioMeters);
         sensorInfoSettingButton = settingsOptionButton("INFO DO SENSOR", this::showSensorInfo);
         Button closeButton = settingsOptionButton("FECHAR", this::closeVideoSettings);
         card.addView(qualitySettingButton);
+        card.addView(codecSettingButton);
         card.addView(bitrateSettingButton);
         card.addView(fpsSettingButton);
         card.addView(stabilizationSettingButton);
         card.addView(gridSettingButton);
         card.addView(guidesSettingButton);
+        card.addView(histogramSettingButton);
         card.addView(zebraSettingButton);
-        card.addView(focusAssistSettingButton);
         card.addView(timecodeSettingButton);
-        card.addView(audioMetersSettingButton);
         card.addView(sensorInfoSettingButton);
         card.addView(closeButton);
         updateVideoSettingsLabels();
@@ -558,8 +561,13 @@ public class MainActivity extends Activity implements SurfaceHolder.Callback {
         updateVideoSettingsLabels();
     }
 
-    private void toggleBoostedBitrate() {
-        boostedBitrate = !boostedBitrate;
+    private void cycleCodecMode() {
+        codecMode = (codecMode + 1) % 3;
+        updateVideoSettingsLabels();
+    }
+
+    private void cycleBitrateMode() {
+        bitrateMode = (bitrateMode + 1) % 3;
         updateVideoSettingsLabels();
     }
 
@@ -575,15 +583,15 @@ public class MainActivity extends Activity implements SurfaceHolder.Callback {
 
     private void updateVideoSettingsLabels() {
         if (qualitySettingButton != null) qualitySettingButton.setText("Qualidade: " + videoQualityLabel());
-        if (bitrateSettingButton != null) bitrateSettingButton.setText("Bitrate: " + (boostedBitrate ? "REFORÇADO (teste)" : "NORMAL"));
-        if (fpsSettingButton != null) fpsSettingButton.setText("FPS: " + fpsLabel() + " (seguro)");
-        if (stabilizationSettingButton != null) stabilizationSettingButton.setText("Estabilização: " + (videoStabilizationEnabled ? "ON" : "OFF"));
+        if (codecSettingButton != null) codecSettingButton.setText("Codec: " + codecLabel());
+        if (bitrateSettingButton != null) bitrateSettingButton.setText("Bitrate: " + bitrateLabel());
+        if (fpsSettingButton != null) fpsSettingButton.setText("FPS: " + fpsLabel() + " (perfil real)");
+        if (stabilizationSettingButton != null) stabilizationSettingButton.setText("Estabilização: " + onOff(videoStabilizationEnabled));
         if (gridSettingButton != null) gridSettingButton.setText("Grade 3x3: " + onOff(gridEnabled));
         if (guidesSettingButton != null) guidesSettingButton.setText("Guias 16:9: " + onOff(frameGuidesEnabled));
-        if (zebraSettingButton != null) zebraSettingButton.setText("Zebra: " + onOff(zebraEnabled));
-        if (focusAssistSettingButton != null) focusAssistSettingButton.setText("Focus assist: " + onOff(focusAssistEnabled));
-        if (timecodeSettingButton != null) timecodeSettingButton.setText("Timecode: " + onOff(timecodeEnabled));
-        if (audioMetersSettingButton != null) audioMetersSettingButton.setText("Medidores de áudio: " + onOff(audioMetersEnabled));
+        if (histogramSettingButton != null) histogramSettingButton.setText("Histograma real: " + onOff(histogramEnabled));
+        if (zebraSettingButton != null) zebraSettingButton.setText("Zebra real: " + onOff(zebraEnabled));
+        if (timecodeSettingButton != null) timecodeSettingButton.setText("Timecode real: " + onOff(timecodeEnabled));
         updateMonitorButtonState();
         updateAnalogInterface();
         if (monitorOverlay != null) monitorOverlay.invalidate();
@@ -594,12 +602,11 @@ public class MainActivity extends Activity implements SurfaceHolder.Callback {
     }
 
     private void toggleHud() {
-        boolean enable = !(gridEnabled || frameGuidesEnabled || zebraEnabled || focusAssistEnabled || timecodeEnabled || audioMetersEnabled);
+        boolean enable = !(gridEnabled || frameGuidesEnabled || histogramEnabled || zebraEnabled || timecodeEnabled);
         gridEnabled = enable;
         frameGuidesEnabled = enable;
-        focusAssistEnabled = enable;
+        histogramEnabled = enable;
         timecodeEnabled = enable;
-        audioMetersEnabled = enable;
         zebraEnabled = false;
         updateVideoSettingsLabels();
     }
@@ -619,8 +626,8 @@ public class MainActivity extends Activity implements SurfaceHolder.Callback {
         updateVideoSettingsLabels();
     }
 
-    private void toggleFocusAssist() {
-        focusAssistEnabled = !focusAssistEnabled;
+    private void toggleHistogramOverlay() {
+        histogramEnabled = !histogramEnabled;
         updateVideoSettingsLabels();
     }
 
@@ -629,20 +636,15 @@ public class MainActivity extends Activity implements SurfaceHolder.Callback {
         updateVideoSettingsLabels();
     }
 
-    private void toggleAudioMeters() {
-        audioMetersEnabled = !audioMetersEnabled;
-        updateVideoSettingsLabels();
-    }
-
     private void updateMonitorButtonState() {
         if (monitorButton == null) return;
-        boolean enabled = gridEnabled || frameGuidesEnabled || zebraEnabled || focusAssistEnabled || timecodeEnabled || audioMetersEnabled;
+        boolean enabled = gridEnabled || frameGuidesEnabled || histogramEnabled || zebraEnabled || timecodeEnabled;
         monitorButton.setText(enabled ? "HUD ON" : "HUD");
         applyModeButtonState(monitorButton, enabled);
     }
 
     private void showSensorInfo() {
-        String message = "Sensor: " + currentPictureSizeLabel() + " • Vídeo: " + currentVideoProfileLabel() + " • Zoom: " + currentZoomLabel();
+        String message = "Sensor: " + currentPictureSizeLabel() + " • Vídeo: " + currentVideoProfileLabel() + " • Codec: " + codecLabel() + " • Zoom: " + currentZoomLabel();
         toast(message);
     }
 
@@ -663,6 +665,22 @@ public class MainActivity extends Activity implements SurfaceHolder.Callback {
             return profile.videoFrameWidth + "x" + profile.videoFrameHeight + " @" + profile.videoFrameRate + "fps";
         } catch (Exception ignored) {
             return videoQualityLabel();
+        }
+    }
+
+    private String codecLabel() {
+        switch (codecMode) {
+            case 1: return "H.264";
+            case 2: return Build.VERSION.SDK_INT >= Build.VERSION_CODES.N ? "H.265" : "H.265 indisponível";
+            default: return "Perfil do aparelho";
+        }
+    }
+
+    private String bitrateLabel() {
+        switch (bitrateMode) {
+            case 1: return "Alto";
+            case 2: return "Máximo seguro";
+            default: return "Perfil do aparelho";
         }
     }
 
@@ -912,6 +930,7 @@ public class MainActivity extends Activity implements SurfaceHolder.Callback {
         }
         try {
             camera.setPreviewDisplay(surfaceHolder);
+            camera.setPreviewCallback((data, cam) -> analyzePreviewFrame(data, cam));
             camera.startPreview();
         } catch (Exception error) {
             status("Erro no preview: " + error.getMessage());
@@ -1038,6 +1057,43 @@ public class MainActivity extends Activity implements SurfaceHolder.Callback {
     }
 
 
+    private void analyzePreviewFrame(byte[] data, Camera cam) {
+        if ((!histogramEnabled && !zebraEnabled) || data == null || cam == null) return;
+        long now = System.currentTimeMillis();
+        if (now - lastPreviewAnalysisMillis < 180L) return;
+        lastPreviewAnalysisMillis = now;
+        try {
+            Camera.Size size = cam.getParameters().getPreviewSize();
+            if (size == null) return;
+            int width = size.width;
+            int height = size.height;
+            int lumaSize = Math.min(data.length, width * height);
+            int[] bins = new int[32];
+            boolean[] cells = new boolean[96];
+            int[] cellBright = new int[96];
+            int[] cellTotal = new int[96];
+            int step = Math.max(1, lumaSize / 12000);
+            for (int i = 0; i < lumaSize; i += step) {
+                int y = data[i] & 0xFF;
+                bins[Math.min(31, y / 8)]++;
+                int px = i % width;
+                int py = i / width;
+                int cx = Math.min(11, px * 12 / width);
+                int cy = Math.min(7, py * 8 / height);
+                int ci = cy * 12 + cx;
+                cellTotal[ci]++;
+                if (y >= 235) cellBright[ci]++;
+            }
+            for (int i = 0; i < cells.length; i++) {
+                cells[i] = cellTotal[i] > 0 && (cellBright[i] * 100 / cellTotal[i]) >= 35;
+            }
+            histogramBins = bins;
+            zebraCells = cells;
+            if (monitorOverlay != null) monitorOverlay.postInvalidate();
+        } catch (Exception ignored) {
+        }
+    }
+
     private void takePhoto() {
         if (camera == null || recording || photoInProgress) return;
         photoInProgress = true;
@@ -1156,8 +1212,7 @@ public class MainActivity extends Activity implements SurfaceHolder.Callback {
 
             CamcorderProfile profile = getBestProfile();
             mediaRecorder.setProfile(profile);
-            // Mantemos bitrate e FPS no perfil nativo para evitar arquivos quebrados em aparelhos
-            // que rejeitam combinações manuais. As opções continuam no menu para evolução gradual.
+            applyVideoCodecAndBitrate(mediaRecorder, profile);
             mediaRecorder.setOrientationHint(calculateMediaOrientation());
 
             currentVideoUri = createVideoUri();
@@ -1207,6 +1262,26 @@ public class MainActivity extends Activity implements SurfaceHolder.Callback {
             updateAnalogInterface();
             cleanupRecorder();
             reconnectCameraAfterRecording();
+        }
+    }
+
+    private void applyVideoCodecAndBitrate(MediaRecorder recorder, CamcorderProfile profile) {
+        try {
+            if (codecMode == 1) {
+                recorder.setVideoEncoder(MediaRecorder.VideoEncoder.H264);
+            } else if (codecMode == 2 && Build.VERSION.SDK_INT >= Build.VERSION_CODES.N) {
+                recorder.setVideoEncoder(MediaRecorder.VideoEncoder.HEVC);
+            }
+        } catch (Exception ignored) {
+        }
+        try {
+            if (bitrateMode > 0) {
+                int multiplier = bitrateMode == 2 ? 150 : 125;
+                int requested = Math.max(profile.videoBitRate, profile.videoBitRate * multiplier / 100);
+                int maxSafe = profile.videoFrameWidth >= 3800 ? 80000000 : profile.videoFrameWidth >= 1900 ? 40000000 : 20000000;
+                recorder.setVideoEncodingBitRate(Math.min(requested, maxSafe));
+            }
+        } catch (Exception ignored) {
         }
     }
 
@@ -1427,6 +1502,7 @@ public class MainActivity extends Activity implements SurfaceHolder.Callback {
     private void releaseCamera() {
         try {
             if (camera != null) {
+                camera.setPreviewCallback(null);
                 camera.stopPreview();
                 camera.release();
             }
@@ -1500,10 +1576,9 @@ public class MainActivity extends Activity implements SurfaceHolder.Callback {
             if (width <= 0 || height <= 0) return;
             if (gridEnabled) drawGrid(canvas, width, height);
             if (frameGuidesEnabled) drawFrameGuide(canvas, width, height);
-            if (focusAssistEnabled) drawFocusAssist(canvas, width, height);
+            if (histogramEnabled) drawHistogram(canvas, width, height);
             if (zebraEnabled) drawZebra(canvas, width, height);
             if (timecodeEnabled) drawTimecode(canvas, width, height);
-            if (audioMetersEnabled) drawAudioMeters(canvas, width, height);
         }
 
         private void drawGrid(Canvas canvas, int width, int height) {
@@ -1536,35 +1611,52 @@ public class MainActivity extends Activity implements SurfaceHolder.Callback {
             canvas.drawRoundRect(rect, dp(18), dp(18), paint);
         }
 
-        private void drawFocusAssist(Canvas canvas, int width, int height) {
-            float cx = width / 2f;
-            float cy = (height - dp(120)) / 2f;
-            float size = dp(42);
-            paint.setStyle(Paint.Style.STROKE);
-            paint.setStrokeWidth(dp(2));
-            paint.setColor(0xDDCA0013);
-            canvas.drawLine(cx - size, cy, cx - dp(16), cy, paint);
-            canvas.drawLine(cx + dp(16), cy, cx + size, cy, paint);
-            rect.set(cx - dp(18), cy - dp(12), cx + dp(18), cy + dp(12));
-            canvas.drawRoundRect(rect, dp(6), dp(6), paint);
+        private void drawHistogram(Canvas canvas, int width, int height) {
+            int[] bins = histogramBins;
+            if (bins == null || bins.length == 0) return;
+            int left = dp(16);
+            int bottom = height - dp(118);
+            int graphWidth = dp(126);
+            int graphHeight = dp(72);
+            int max = 1;
+            for (int value : bins) if (value > max) max = value;
+            rect.set(left - dp(8), bottom - graphHeight - dp(10), left + graphWidth + dp(8), bottom + dp(8));
+            paint.setStyle(Paint.Style.FILL);
+            paint.setColor(0xAA171E19);
+            canvas.drawRoundRect(rect, dp(14), dp(14), paint);
+            paint.setColor(0xFFB7C6C2);
+            float barWidth = graphWidth / (float) bins.length;
+            for (int i = 0; i < bins.length; i++) {
+                float h = graphHeight * (bins[i] / (float) max);
+                canvas.drawRect(left + i * barWidth, bottom - h, left + (i + 1) * barWidth - 1, bottom, paint);
+            }
+            paint.setTextSize(dp(10));
+            paint.setTypeface(Typeface.create("sans-serif", Typeface.BOLD));
+            paint.setColor(Color.WHITE);
+            canvas.drawText("HIST", left, bottom - graphHeight - dp(16), paint);
         }
 
         private void drawZebra(Canvas canvas, int width, int height) {
+            boolean[] cells = zebraCells;
+            if (cells == null || cells.length < 96) return;
+            int bottomLimit = height - dp(110);
+            float cellW = width / 12f;
+            float cellH = bottomLimit / 8f;
             paint.setStyle(Paint.Style.STROKE);
             paint.setStrokeWidth(dp(2));
-            paint.setColor(0x88EEEBE3);
-            int top = dp(54);
-            int right = width - dp(18);
-            int left = width - dp(128);
-            int bottom = top + dp(64);
-            for (int x = left - dp(64); x < right; x += dp(12)) {
-                canvas.drawLine(x, bottom, x + dp(64), top, paint);
+            paint.setColor(0xCCCA0013);
+            for (int cy = 0; cy < 8; cy++) {
+                for (int cx = 0; cx < 12; cx++) {
+                    if (!cells[cy * 12 + cx]) continue;
+                    float left = cx * cellW;
+                    float top = cy * cellH;
+                    float right = left + cellW;
+                    float bottom = top + cellH;
+                    for (float x = left - cellH; x < right; x += dp(10)) {
+                        canvas.drawLine(x, bottom, x + cellH, top, paint);
+                    }
+                }
             }
-            paint.setStyle(Paint.Style.FILL);
-            paint.setTextSize(dp(10));
-            paint.setTypeface(Typeface.create("sans-serif", Typeface.BOLD));
-            paint.setColor(0xFFEEEBE3);
-            canvas.drawText("ZEBRA", left, bottom + dp(16), paint);
         }
 
         private void drawTimecode(Canvas canvas, int width, int height) {
@@ -1582,24 +1674,6 @@ public class MainActivity extends Activity implements SurfaceHolder.Callback {
             canvas.drawText(text, dp(38), dp(46), paint);
         }
 
-        private void drawAudioMeters(Canvas canvas, int width, int height) {
-            int baseX = width - dp(44);
-            int bottom = height - dp(118);
-            int maxHeight = dp(94);
-            long t = System.currentTimeMillis() / 120L;
-            int leftLevel = recording ? (int) (maxHeight * (0.28f + ((t % 6) / 10f))) : dp(18);
-            int rightLevel = recording ? (int) (maxHeight * (0.24f + (((t + 3) % 6) / 10f))) : dp(14);
-            paint.setStyle(Paint.Style.FILL);
-            paint.setColor(0x55171E19);
-            canvas.drawRoundRect(new RectF(baseX - dp(8), bottom - maxHeight - dp(8), baseX + dp(28), bottom + dp(8)), dp(12), dp(12), paint);
-            paint.setColor(0xFFB7C6C2);
-            canvas.drawRoundRect(new RectF(baseX, bottom - leftLevel, baseX + dp(8), bottom), dp(4), dp(4), paint);
-            canvas.drawRoundRect(new RectF(baseX + dp(14), bottom - rightLevel, baseX + dp(22), bottom), dp(4), dp(4), paint);
-            if (recording) {
-                paint.setColor(0xFFCA0013);
-                canvas.drawCircle(baseX + dp(26), bottom - maxHeight, dp(4), paint);
-            }
-        }
     }
 
 }
