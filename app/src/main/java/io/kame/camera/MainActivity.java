@@ -78,6 +78,11 @@ public class MainActivity extends Activity implements SurfaceHolder.Callback {
     private Button bitrateSettingButton;
     private Button fpsSettingButton;
     private Button stabilizationSettingButton;
+    private Button aeLockSettingButton;
+    private Button awbLockSettingButton;
+    private Button whiteBalanceSettingButton;
+    private Button focusModeSettingButton;
+    private Button sceneModeSettingButton;
     private Button gridSettingButton;
     private Button guidesSettingButton;
     private Button histogramSettingButton;
@@ -122,6 +127,12 @@ public class MainActivity extends Activity implements SurfaceHolder.Callback {
     private int fpsMode = 0;
     private int bitrateMode = 0;
     private boolean videoStabilizationEnabled = true;
+    private boolean autoExposureLocked = false;
+    private boolean autoWhiteBalanceLocked = false;
+    private String selectedWhiteBalance = null;
+    private String selectedFocusMode = null;
+    private String selectedSceneMode = null;
+    private ArrayList<Camera.Area> focusMeteringAreas = null;
     private boolean gridEnabled = false;
     private boolean frameGuidesEnabled = false;
     private boolean histogramEnabled = false;
@@ -391,7 +402,7 @@ public class MainActivity extends Activity implements SurfaceHolder.Callback {
                 float dy = Math.abs(event.getY() - touchStartY);
                 boolean recentPinch = System.currentTimeMillis() - lastPinchAtMs < 650;
                 if (!gestureConsumed && !recentPinch && dx < dp(18) && dy < dp(18)) {
-                    triggerAutoFocus();
+                    triggerAutoFocusAt(event.getX(), event.getY());
                 }
                 gestureConsumed = false;
                 return true;
@@ -488,6 +499,11 @@ public class MainActivity extends Activity implements SurfaceHolder.Callback {
         bitrateSettingButton = settingsOptionButton("", this::cycleBitrateMode);
         fpsSettingButton = settingsOptionButton("", this::cycleFpsMode);
         stabilizationSettingButton = settingsOptionButton("", this::toggleVideoStabilization);
+        aeLockSettingButton = settingsOptionButton("", this::toggleAutoExposureLock);
+        awbLockSettingButton = settingsOptionButton("", this::toggleAutoWhiteBalanceLock);
+        whiteBalanceSettingButton = settingsOptionButton("", this::cycleWhiteBalance);
+        focusModeSettingButton = settingsOptionButton("", this::cycleFocusMode);
+        sceneModeSettingButton = settingsOptionButton("", this::cycleSceneMode);
         gridSettingButton = settingsOptionButton("", this::toggleGridOverlay);
         guidesSettingButton = settingsOptionButton("", this::toggleFrameGuides);
         histogramSettingButton = settingsOptionButton("", this::toggleHistogramOverlay);
@@ -500,6 +516,11 @@ public class MainActivity extends Activity implements SurfaceHolder.Callback {
         card.addView(bitrateSettingButton);
         card.addView(fpsSettingButton);
         card.addView(stabilizationSettingButton);
+        card.addView(aeLockSettingButton);
+        card.addView(awbLockSettingButton);
+        card.addView(whiteBalanceSettingButton);
+        card.addView(focusModeSettingButton);
+        card.addView(sceneModeSettingButton);
         card.addView(gridSettingButton);
         card.addView(guidesSettingButton);
         card.addView(histogramSettingButton);
@@ -587,6 +608,11 @@ public class MainActivity extends Activity implements SurfaceHolder.Callback {
         if (bitrateSettingButton != null) bitrateSettingButton.setText("Bitrate: " + bitrateLabel());
         if (fpsSettingButton != null) fpsSettingButton.setText("FPS: " + fpsLabel() + " (perfil real)");
         if (stabilizationSettingButton != null) stabilizationSettingButton.setText("Estabilização: " + onOff(videoStabilizationEnabled));
+        if (aeLockSettingButton != null) aeLockSettingButton.setText("AE Lock: " + onOff(autoExposureLocked));
+        if (awbLockSettingButton != null) awbLockSettingButton.setText("AWB Lock: " + onOff(autoWhiteBalanceLocked));
+        if (whiteBalanceSettingButton != null) whiteBalanceSettingButton.setText("White balance: " + cameraValueLabel(selectedWhiteBalance, "AUTO"));
+        if (focusModeSettingButton != null) focusModeSettingButton.setText("Foco: " + cameraValueLabel(selectedFocusMode, "AUTO"));
+        if (sceneModeSettingButton != null) sceneModeSettingButton.setText("Cena: " + cameraValueLabel(selectedSceneMode, "AUTO/HDR"));
         if (gridSettingButton != null) gridSettingButton.setText("Grade 3x3: " + onOff(gridEnabled));
         if (guidesSettingButton != null) guidesSettingButton.setText("Guias 16:9: " + onOff(frameGuidesEnabled));
         if (histogramSettingButton != null) histogramSettingButton.setText("Histograma real: " + onOff(histogramEnabled));
@@ -609,6 +635,61 @@ public class MainActivity extends Activity implements SurfaceHolder.Callback {
         timecodeEnabled = enable;
         zebraEnabled = false;
         updateVideoSettingsLabels();
+    }
+
+    private String cameraValueLabel(String value, String fallback) {
+        if (value == null || value.trim().isEmpty()) return fallback;
+        return value.toUpperCase(Locale.US).replace('-', ' ');
+    }
+
+    private void toggleAutoExposureLock() {
+        autoExposureLocked = !autoExposureLocked;
+        applyHighQualityParameters(videoMode);
+        updateVideoSettingsLabels();
+    }
+
+    private void toggleAutoWhiteBalanceLock() {
+        autoWhiteBalanceLocked = !autoWhiteBalanceLocked;
+        applyHighQualityParameters(videoMode);
+        updateVideoSettingsLabels();
+    }
+
+    private void cycleWhiteBalance() {
+        try {
+            if (camera == null) return;
+            selectedWhiteBalance = nextSupportedValue(camera.getParameters().getSupportedWhiteBalance(), selectedWhiteBalance);
+            applyHighQualityParameters(videoMode);
+        } catch (Exception ignored) {
+        }
+        updateVideoSettingsLabels();
+    }
+
+    private void cycleFocusMode() {
+        try {
+            if (camera == null) return;
+            selectedFocusMode = nextSupportedValue(camera.getParameters().getSupportedFocusModes(), selectedFocusMode);
+            applyHighQualityParameters(videoMode);
+        } catch (Exception ignored) {
+        }
+        updateVideoSettingsLabels();
+    }
+
+    private void cycleSceneMode() {
+        try {
+            if (camera == null) return;
+            selectedSceneMode = nextSupportedValue(camera.getParameters().getSupportedSceneModes(), selectedSceneMode);
+            applyHighQualityParameters(videoMode);
+        } catch (Exception ignored) {
+        }
+        updateVideoSettingsLabels();
+    }
+
+    private String nextSupportedValue(List<String> supported, String current) {
+        if (supported == null || supported.isEmpty()) return null;
+        ArrayList<String> values = new ArrayList<>(supported);
+        Collections.sort(values);
+        if (current == null || !values.contains(current)) return values.get(0);
+        return values.get((values.indexOf(current) + 1) % values.size());
     }
 
     private void toggleGridOverlay() {
@@ -962,7 +1043,9 @@ public class MainActivity extends Activity implements SurfaceHolder.Callback {
 
             List<String> focusModes = parameters.getSupportedFocusModes();
             if (focusModes != null) {
-                if (videoMode && focusModes.contains(Camera.Parameters.FOCUS_MODE_CONTINUOUS_VIDEO)) {
+                if (selectedFocusMode != null && focusModes.contains(selectedFocusMode)) {
+                    parameters.setFocusMode(selectedFocusMode);
+                } else if (videoMode && focusModes.contains(Camera.Parameters.FOCUS_MODE_CONTINUOUS_VIDEO)) {
                     parameters.setFocusMode(Camera.Parameters.FOCUS_MODE_CONTINUOUS_VIDEO);
                 } else if (!videoMode && focusModes.contains(Camera.Parameters.FOCUS_MODE_CONTINUOUS_PICTURE)) {
                     parameters.setFocusMode(Camera.Parameters.FOCUS_MODE_CONTINUOUS_PICTURE);
@@ -973,7 +1056,9 @@ public class MainActivity extends Activity implements SurfaceHolder.Callback {
 
             List<String> sceneModes = parameters.getSupportedSceneModes();
             if (sceneModes != null) {
-                if (!videoMode && sceneModes.contains(Camera.Parameters.SCENE_MODE_HDR)) {
+                if (selectedSceneMode != null && sceneModes.contains(selectedSceneMode)) {
+                    parameters.setSceneMode(selectedSceneMode);
+                } else if (!videoMode && sceneModes.contains(Camera.Parameters.SCENE_MODE_HDR)) {
                     parameters.setSceneMode(Camera.Parameters.SCENE_MODE_HDR);
                 } else if (sceneModes.contains(Camera.Parameters.SCENE_MODE_AUTO)) {
                     parameters.setSceneMode(Camera.Parameters.SCENE_MODE_AUTO);
@@ -981,8 +1066,19 @@ public class MainActivity extends Activity implements SurfaceHolder.Callback {
             }
 
             List<String> whiteBalance = parameters.getSupportedWhiteBalance();
-            if (whiteBalance != null && whiteBalance.contains(Camera.Parameters.WHITE_BALANCE_AUTO)) {
-                parameters.setWhiteBalance(Camera.Parameters.WHITE_BALANCE_AUTO);
+            if (whiteBalance != null) {
+                if (selectedWhiteBalance != null && whiteBalance.contains(selectedWhiteBalance)) {
+                    parameters.setWhiteBalance(selectedWhiteBalance);
+                } else if (whiteBalance.contains(Camera.Parameters.WHITE_BALANCE_AUTO)) {
+                    parameters.setWhiteBalance(Camera.Parameters.WHITE_BALANCE_AUTO);
+                }
+            }
+
+            if (parameters.isAutoExposureLockSupported()) {
+                parameters.setAutoExposureLock(autoExposureLocked);
+            }
+            if (parameters.isAutoWhiteBalanceLockSupported()) {
+                parameters.setAutoWhiteBalanceLock(autoWhiteBalanceLocked);
             }
 
             List<String> antibanding = parameters.getSupportedAntibanding();
@@ -999,7 +1095,7 @@ public class MainActivity extends Activity implements SurfaceHolder.Callback {
                 parameters.setColorEffect(Camera.Parameters.EFFECT_NONE);
             }
 
-            applyCenterMetering(parameters);
+            applyFocusAndMetering(parameters);
 
             if (parameters.isZoomSupported()) {
                 zoomValue = Math.max(0, Math.min(zoomValue, parameters.getMaxZoom()));
@@ -1042,18 +1138,39 @@ public class MainActivity extends Activity implements SurfaceHolder.Callback {
         }
     }
 
-    private void applyCenterMetering(Camera.Parameters parameters) {
+    private void applyFocusAndMetering(Camera.Parameters parameters) {
         try {
-            ArrayList<Camera.Area> center = new ArrayList<>();
-            center.add(new Camera.Area(new Rect(-250, -250, 250, 250), 900));
+            ArrayList<Camera.Area> areas = focusMeteringAreas;
+            if (areas == null || areas.isEmpty()) {
+                areas = new ArrayList<>();
+                areas.add(new Camera.Area(new Rect(-250, -250, 250, 250), 900));
+            }
             if (parameters.getMaxNumMeteringAreas() > 0) {
-                parameters.setMeteringAreas(center);
+                parameters.setMeteringAreas(areas);
             }
             if (parameters.getMaxNumFocusAreas() > 0) {
-                parameters.setFocusAreas(center);
+                parameters.setFocusAreas(areas);
             }
         } catch (Exception ignored) {
         }
+    }
+
+    private Rect meteringRectFromTouch(float x, float y) {
+        int width = Math.max(1, surfaceView != null ? surfaceView.getWidth() : 1);
+        int height = Math.max(1, surfaceView != null ? surfaceView.getHeight() : 1);
+        int centerX = clamp((int) ((x / width) * 2000f - 1000f), -1000, 1000);
+        int centerY = clamp((int) ((y / height) * 2000f - 1000f), -1000, 1000);
+        int half = 170;
+        return new Rect(
+                clamp(centerX - half, -1000, 1000),
+                clamp(centerY - half, -1000, 1000),
+                clamp(centerX + half, -1000, 1000),
+                clamp(centerY + half, -1000, 1000)
+        );
+    }
+
+    private int clamp(int value, int min, int max) {
+        return Math.max(min, Math.min(max, value));
     }
 
 
@@ -1481,14 +1598,23 @@ public class MainActivity extends Activity implements SurfaceHolder.Callback {
     }
 
     private void triggerAutoFocus() {
+        triggerAutoFocusAt(surfaceView != null ? surfaceView.getWidth() / 2f : 0f, surfaceView != null ? surfaceView.getHeight() / 2f : 0f);
+    }
+
+    private void triggerAutoFocusAt(float x, float y) {
         if (camera == null || recording) return;
         try {
             Camera.Parameters parameters = camera.getParameters();
+            ArrayList<Camera.Area> areas = new ArrayList<>();
+            areas.add(new Camera.Area(meteringRectFromTouch(x, y), 1000));
+            focusMeteringAreas = areas;
+            if (parameters.getMaxNumFocusAreas() > 0) parameters.setFocusAreas(areas);
+            if (parameters.getMaxNumMeteringAreas() > 0) parameters.setMeteringAreas(areas);
             List<String> focusModes = parameters.getSupportedFocusModes();
             if (focusModes != null && focusModes.contains(Camera.Parameters.FOCUS_MODE_AUTO)) {
                 parameters.setFocusMode(Camera.Parameters.FOCUS_MODE_AUTO);
-                camera.setParameters(parameters);
             }
+            camera.setParameters(parameters);
             camera.cancelAutoFocus();
             camera.autoFocus((success, cam) -> {
                 status(success ? "Foco ajustado" : "Foco solicitado");
