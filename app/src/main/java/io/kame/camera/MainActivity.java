@@ -5,6 +5,7 @@ import android.app.Activity;
 import android.content.ContentResolver;
 import android.content.ContentValues;
 import android.content.Context;
+import android.content.SharedPreferences;
 import android.content.res.ColorStateList;
 import android.content.res.Configuration;
 import android.content.pm.PackageManager;
@@ -18,6 +19,8 @@ import android.graphics.Paint;
 import android.graphics.drawable.GradientDrawable;
 import android.hardware.Camera;
 import android.media.CamcorderProfile;
+import android.media.MediaCodecInfo;
+import android.media.MediaCodecList;
 import android.media.MediaRecorder;
 import android.net.Uri;
 import android.os.Build;
@@ -57,6 +60,7 @@ import java.util.Locale;
 @SuppressWarnings("deprecation")
 public class MainActivity extends Activity implements SurfaceHolder.Callback {
     private static final int REQUEST_PERMISSIONS = 10;
+    private static final String PREFS_NAME = "kame_camera_settings";
 
     private SurfaceView surfaceView;
     private TextView statusText;
@@ -155,6 +159,7 @@ public class MainActivity extends Activity implements SurfaceHolder.Callback {
         super.onCreate(savedInstanceState);
         enableImmersiveMode();
         cameraId = findBackCameraId();
+        loadSettings();
         buildUi();
         if (hasRequiredPermissions()) {
             openCameraWhenReady();
@@ -199,6 +204,52 @@ public class MainActivity extends Activity implements SurfaceHolder.Callback {
                         | View.SYSTEM_UI_FLAG_LAYOUT_HIDE_NAVIGATION
                         | View.SYSTEM_UI_FLAG_LAYOUT_STABLE
         );
+    }
+
+    private void loadSettings() {
+        SharedPreferences prefs = getSharedPreferences(PREFS_NAME, MODE_PRIVATE);
+        photoSizeMode = prefs.getInt("photoSizeMode", photoSizeMode);
+        videoQualityMode = prefs.getInt("videoQualityMode", videoQualityMode);
+        codecMode = prefs.getInt("codecMode", codecMode);
+        fpsMode = prefs.getInt("fpsMode", fpsMode);
+        bitrateMode = prefs.getInt("bitrateMode", bitrateMode);
+        videoStabilizationEnabled = prefs.getBoolean("videoStabilizationEnabled", videoStabilizationEnabled);
+        autoExposureLocked = prefs.getBoolean("autoExposureLocked", autoExposureLocked);
+        autoWhiteBalanceLocked = prefs.getBoolean("autoWhiteBalanceLocked", autoWhiteBalanceLocked);
+        gridEnabled = prefs.getBoolean("gridEnabled", gridEnabled);
+        frameGuidesEnabled = prefs.getBoolean("frameGuidesEnabled", frameGuidesEnabled);
+        histogramEnabled = prefs.getBoolean("histogramEnabled", histogramEnabled);
+        zebraEnabled = prefs.getBoolean("zebraEnabled", zebraEnabled);
+        timecodeEnabled = prefs.getBoolean("timecodeEnabled", timecodeEnabled);
+        selectedFlashMode = prefs.getString("selectedFlashMode", selectedFlashMode);
+        selectedAntibanding = prefs.getString("selectedAntibanding", selectedAntibanding);
+        selectedWhiteBalance = prefs.getString("selectedWhiteBalance", selectedWhiteBalance);
+        selectedFocusMode = prefs.getString("selectedFocusMode", selectedFocusMode);
+        selectedSceneMode = prefs.getString("selectedSceneMode", selectedSceneMode);
+        torchEnabled = Camera.Parameters.FLASH_MODE_TORCH.equals(selectedFlashMode);
+    }
+
+    private void saveSettings() {
+        getSharedPreferences(PREFS_NAME, MODE_PRIVATE).edit()
+                .putInt("photoSizeMode", photoSizeMode)
+                .putInt("videoQualityMode", videoQualityMode)
+                .putInt("codecMode", codecMode)
+                .putInt("fpsMode", fpsMode)
+                .putInt("bitrateMode", bitrateMode)
+                .putBoolean("videoStabilizationEnabled", videoStabilizationEnabled)
+                .putBoolean("autoExposureLocked", autoExposureLocked)
+                .putBoolean("autoWhiteBalanceLocked", autoWhiteBalanceLocked)
+                .putBoolean("gridEnabled", gridEnabled)
+                .putBoolean("frameGuidesEnabled", frameGuidesEnabled)
+                .putBoolean("histogramEnabled", histogramEnabled)
+                .putBoolean("zebraEnabled", zebraEnabled)
+                .putBoolean("timecodeEnabled", timecodeEnabled)
+                .putString("selectedFlashMode", selectedFlashMode)
+                .putString("selectedAntibanding", selectedAntibanding)
+                .putString("selectedWhiteBalance", selectedWhiteBalance)
+                .putString("selectedFocusMode", selectedFocusMode)
+                .putString("selectedSceneMode", selectedSceneMode)
+                .apply();
     }
 
     @Override
@@ -608,32 +659,38 @@ public class MainActivity extends Activity implements SurfaceHolder.Callback {
 
     private void cyclePhotoSizeMode() {
         photoSizeMode = (photoSizeMode + 1) % 3;
+        saveSettings();
         applyHighQualityParameters(videoMode);
         updateVideoSettingsLabels();
     }
 
     private void cycleVideoQuality() {
         videoQualityMode = (videoQualityMode + 1) % 4;
+        saveSettings();
         updateVideoSettingsLabels();
     }
 
     private void cycleCodecMode() {
         codecMode = (codecMode + 1) % 3;
+        saveSettings();
         updateVideoSettingsLabels();
     }
 
     private void cycleBitrateMode() {
         bitrateMode = (bitrateMode + 1) % 3;
+        saveSettings();
         updateVideoSettingsLabels();
     }
 
     private void cycleFpsMode() {
         fpsMode = (fpsMode + 1) % 3;
+        saveSettings();
         updateVideoSettingsLabels();
     }
 
     private void toggleVideoStabilization() {
         videoStabilizationEnabled = !videoStabilizationEnabled;
+        saveSettings();
         updateVideoSettingsLabels();
     }
 
@@ -672,6 +729,7 @@ public class MainActivity extends Activity implements SurfaceHolder.Callback {
         histogramEnabled = enable;
         timecodeEnabled = enable;
         zebraEnabled = false;
+        saveSettings();
         updateVideoSettingsLabels();
     }
 
@@ -680,6 +738,7 @@ public class MainActivity extends Activity implements SurfaceHolder.Callback {
             if (camera == null) return;
             selectedFlashMode = nextSupportedValue(camera.getParameters().getSupportedFlashModes(), selectedFlashMode);
             torchEnabled = Camera.Parameters.FLASH_MODE_TORCH.equals(selectedFlashMode);
+            saveSettings();
             applyHighQualityParameters(videoMode);
             flashButton.setText(torchEnabled ? "FLASH ON" : "FLASH");
         } catch (Exception ignored) {
@@ -691,6 +750,7 @@ public class MainActivity extends Activity implements SurfaceHolder.Callback {
         try {
             if (camera == null) return;
             selectedAntibanding = nextSupportedValue(camera.getParameters().getSupportedAntibanding(), selectedAntibanding);
+            saveSettings();
             applyHighQualityParameters(videoMode);
         } catch (Exception ignored) {
         }
@@ -704,12 +764,14 @@ public class MainActivity extends Activity implements SurfaceHolder.Callback {
 
     private void toggleAutoExposureLock() {
         autoExposureLocked = !autoExposureLocked;
+        saveSettings();
         applyHighQualityParameters(videoMode);
         updateVideoSettingsLabels();
     }
 
     private void toggleAutoWhiteBalanceLock() {
         autoWhiteBalanceLocked = !autoWhiteBalanceLocked;
+        saveSettings();
         applyHighQualityParameters(videoMode);
         updateVideoSettingsLabels();
     }
@@ -718,6 +780,7 @@ public class MainActivity extends Activity implements SurfaceHolder.Callback {
         try {
             if (camera == null) return;
             selectedWhiteBalance = nextSupportedValue(camera.getParameters().getSupportedWhiteBalance(), selectedWhiteBalance);
+            saveSettings();
             applyHighQualityParameters(videoMode);
         } catch (Exception ignored) {
         }
@@ -728,6 +791,7 @@ public class MainActivity extends Activity implements SurfaceHolder.Callback {
         try {
             if (camera == null) return;
             selectedFocusMode = nextSupportedValue(camera.getParameters().getSupportedFocusModes(), selectedFocusMode);
+            saveSettings();
             applyHighQualityParameters(videoMode);
         } catch (Exception ignored) {
         }
@@ -738,6 +802,7 @@ public class MainActivity extends Activity implements SurfaceHolder.Callback {
         try {
             if (camera == null) return;
             selectedSceneMode = nextSupportedValue(camera.getParameters().getSupportedSceneModes(), selectedSceneMode);
+            saveSettings();
             applyHighQualityParameters(videoMode);
         } catch (Exception ignored) {
         }
@@ -754,26 +819,31 @@ public class MainActivity extends Activity implements SurfaceHolder.Callback {
 
     private void toggleGridOverlay() {
         gridEnabled = !gridEnabled;
+        saveSettings();
         updateVideoSettingsLabels();
     }
 
     private void toggleFrameGuides() {
         frameGuidesEnabled = !frameGuidesEnabled;
+        saveSettings();
         updateVideoSettingsLabels();
     }
 
     private void toggleZebraOverlay() {
         zebraEnabled = !zebraEnabled;
+        saveSettings();
         updateVideoSettingsLabels();
     }
 
     private void toggleHistogramOverlay() {
         histogramEnabled = !histogramEnabled;
+        saveSettings();
         updateVideoSettingsLabels();
     }
 
     private void toggleTimecodeOverlay() {
         timecodeEnabled = !timecodeEnabled;
+        saveSettings();
         updateVideoSettingsLabels();
     }
 
@@ -1376,7 +1446,7 @@ public class MainActivity extends Activity implements SurfaceHolder.Callback {
             return;
         }
 
-        String name = timestampName("IMG") + ".jpg";
+        String name = timestampName("IMG") + "-" + safeName(photoSizeLabel()) + "-JPEG100.jpg";
         ContentValues values = new ContentValues();
         values.put(MediaStore.MediaColumns.DISPLAY_NAME, name);
         values.put(MediaStore.MediaColumns.TITLE, name.replace(".jpg", ""));
@@ -1435,7 +1505,7 @@ public class MainActivity extends Activity implements SurfaceHolder.Callback {
             applyVideoCodecAndBitrate(mediaRecorder, profile);
             mediaRecorder.setOrientationHint(calculateMediaOrientation());
 
-            currentVideoUri = createVideoUri();
+            currentVideoUri = createVideoUri(profile);
             videoFileDescriptor = getContentResolver().openFileDescriptor(currentVideoUri, "w");
             if (videoFileDescriptor == null) throw new IllegalStateException("Sem arquivo de vídeo");
             mediaRecorder.setOutputFile(videoFileDescriptor.getFileDescriptor());
@@ -1485,11 +1555,25 @@ public class MainActivity extends Activity implements SurfaceHolder.Callback {
         }
     }
 
+    private boolean isEncoderMimeSupported(String mimeType) {
+        try {
+            MediaCodecList list = new MediaCodecList(MediaCodecList.ALL_CODECS);
+            for (MediaCodecInfo info : list.getCodecInfos()) {
+                if (!info.isEncoder()) continue;
+                for (String type : info.getSupportedTypes()) {
+                    if (mimeType.equalsIgnoreCase(type)) return true;
+                }
+            }
+        } catch (Exception ignored) {
+        }
+        return false;
+    }
+
     private void applyVideoCodecAndBitrate(MediaRecorder recorder, CamcorderProfile profile) {
         try {
             if (codecMode == 1) {
                 recorder.setVideoEncoder(MediaRecorder.VideoEncoder.H264);
-            } else if (codecMode == 2 && Build.VERSION.SDK_INT >= Build.VERSION_CODES.N) {
+            } else if (codecMode == 2 && Build.VERSION.SDK_INT >= Build.VERSION_CODES.N && isEncoderMimeSupported("video/hevc")) {
                 recorder.setVideoEncoder(MediaRecorder.VideoEncoder.HEVC);
             }
         } catch (Exception ignored) {
@@ -1530,13 +1614,27 @@ public class MainActivity extends Activity implements SurfaceHolder.Callback {
         startPreview();
     }
 
-    private Uri createVideoUri() {
-        String name = timestampName("VID") + ".mp4";
+    private String buildVideoSummary(CamcorderProfile profile) {
+        String resolution = profile.videoFrameWidth + "x" + profile.videoFrameHeight;
+        String fps = profile.videoFrameRate + "fps";
+        String codec = codecMode == 2 && isEncoderMimeSupported("video/hevc") ? "H265" : codecMode == 1 ? "H264" : "PROFILE";
+        String bitrate = bitrateMode == 2 ? "MAXSAFE" : bitrateMode == 1 ? "HIGH" : "PROFILEBR";
+        return resolution + "-" + fps + "-" + codec + "-" + bitrate;
+    }
+
+    private String safeName(String value) {
+        return value == null ? "AUTO" : value.toUpperCase(Locale.US).replaceAll("[^A-Z0-9]+", "-").replaceAll("(^-|-$)", "");
+    }
+
+    private Uri createVideoUri(CamcorderProfile profile) {
+        String summary = buildVideoSummary(profile);
+        String name = timestampName("VID") + "-" + safeName(summary) + ".mp4";
         ContentValues values = new ContentValues();
         values.put(MediaStore.MediaColumns.DISPLAY_NAME, name);
         values.put(MediaStore.MediaColumns.TITLE, name.replace(".mp4", ""));
         values.put(MediaStore.MediaColumns.MIME_TYPE, "video/mp4");
         values.put(MediaStore.MediaColumns.DATE_TAKEN, System.currentTimeMillis());
+        values.put("description", "Kame Camera " + summary + " codec=" + codecLabel() + " bitrate=" + bitrateLabel());
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
             values.put(MediaStore.Video.Media.RELATIVE_PATH, "Movies/Kame Camera");
         }
@@ -1632,6 +1730,8 @@ public class MainActivity extends Activity implements SurfaceHolder.Callback {
         if (camera == null) return;
         torchEnabled = !torchEnabled;
         if (torchEnabled) selectedFlashMode = Camera.Parameters.FLASH_MODE_TORCH;
+        else if (Camera.Parameters.FLASH_MODE_TORCH.equals(selectedFlashMode)) selectedFlashMode = Camera.Parameters.FLASH_MODE_OFF;
+        saveSettings();
         applyHighQualityParameters(false);
         flashButton.setText(torchEnabled ? "FLASH ON" : "FLASH");
         updateAnalogInterface();
