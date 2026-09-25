@@ -1,86 +1,23 @@
 name: Diagnóstico (temporário)
 
-# Ferramenta de desenvolvimento: roda analyze + test e devolve a saída
-# completa num comentário do PR, para depurar sem acesso aos logs.
+# Ferramenta de desenvolvimento: roda analyze + test + build Android e
+# publica os relatórios crus no branch `ci-reports` (o download de logs do
+# Actions não está disponível no ambiente de desenvolvimento).
 # REMOVER DEPOIS QUE O CI ESTIVER VERDE.
 
 on:
   push:
-    branches: ['**']
+    branches: ['arena/**']
   workflow_dispatch:
 
 permissions:
-  contents: read
-  issues: write
-  pull-requests: write
+  contents: write
 
 jobs:
-  flutter:
-    name: analyze + test (com relatório)
+  report:
+    name: Relatório (analyze + test + APK)
     runs-on: ubuntu-latest
-    timeout-minutes: 25
-    steps:
-      - name: Checkout
-        uses: actions/checkout@v4
-
-      - name: Configurar Flutter
-        uses: subosito/flutter-action@v2
-        with:
-          flutter-version: '3.24.5'
-          channel: stable
-          cache: true
-
-      - name: Instalar dependências
-        run: flutter pub get
-
-      - name: Analisar
-        run: |
-          set +e
-          flutter analyze --no-fatal-infos > analyze.txt 2>&1
-          echo "EXIT_ANALYZE=$?" >> analyze.txt
-          cat analyze.txt
-
-      - name: Testar
-        run: |
-          set +e
-          flutter test --reporter expanded > test.txt 2>&1
-          echo "EXIT_TEST=$?" >> test.txt
-          tail -60 test.txt
-
-      - name: Comentar relatório no PR
-        if: always()
-        env:
-          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-          GH_REPO: ${{ github.repository }}
-        run: |
-          PR=$(gh pr list --head "${GITHUB_REF_NAME}" --state open --json number --jq '.[0].number')
-          if [ -z "$PR" ]; then echo "sem PR aberto para ${GITHUB_REF_NAME}"; exit 0; fi
-          {
-            echo "### Diagnóstico Flutter · \`${GITHUB_SHA:0:7}\`"
-            echo
-            echo "<details><summary>flutter analyze</summary>"
-            echo
-            echo '```'
-            tail -80 analyze.txt
-            echo '```'
-            echo "</details>"
-            echo
-            echo "<details><summary>flutter test</summary>"
-            echo
-            echo '```'
-            head -30 test.txt
-            echo '...'
-            grep -m 1 -A 22 'EXCEPTION CAUGHT' test.txt
-            echo '```'
-            echo "</details>"
-          } > body.md
-          gh api -X POST "repos/${GH_REPO}/issues/${PR}/comments" -F body=@body.md > /dev/null
-          echo "relatório publicado no PR #${PR}"
-
-  apk:
-    name: Build Android (com relatório)
-    runs-on: ubuntu-latest
-    timeout-minutes: 30
+    timeout-minutes: 35
     steps:
       - name: Checkout
         uses: actions/checkout@v4
@@ -101,32 +38,66 @@ jobs:
       - name: Instalar dependências
         run: flutter pub get
 
+      - name: Preparar saída
+        run: mkdir -p out
+
+      - name: Analisar
+        run: |
+          set +e
+          flutter analyze --no-fatal-infos > out/analyze.txt 2>&1
+          echo "EXIT_ANALYZE=$?" >> out/analyze.txt
+
+      - name: Testar
+        run: |
+          set +e
+          mkdir -p out
+          flutter test --reporter compact > out/test.txt 2>&1
+          echo "EXIT_TEST=$?" >> out/test.txt
+
       - name: Compilar APK (debug)
         working-directory: android
         run: |
           set +e
-          ./gradlew assembleDebug --no-daemon --stacktrace > gradle.txt 2>&1
-          echo "EXIT_GRADLE=$?" >> gradle.txt
-          tail -40 gradle.txt
+          mkdir -p ../out
+          ./gradlew assembleDebug --no-daemon --stacktrace > ../out/gradle.txt 2>&1
+          echo "EXIT_GRADLE=$?" >> ../out/gradle.txt
 
-      - name: Comentar relatório no PR
+      - name: Publicar relatórios no branch ci-reports
         if: always()
-        env:
-          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-          GH_REPO: ${{ github.repository }}
         run: |
-          PR=$(gh pr list --head "${GITHUB_REF_NAME}" --state open --json number --jq '.[0].number')
-          if [ -z "$PR" ]; then echo "sem PR aberto"; exit 0; fi
+          mkdir -p out
+          : > out/RESUMO.md
           {
-            echo "### Diagnóstico Android · \`${GITHUB_SHA:0:7}\`"
+            echo "# Relatório ${GITHUB_SHA}"
             echo
+            echo '## analyze (tail)'
             echo '```'
-            echo '--- fim do log ---'
-            tail -25 gradle.txt
+            tail -20 out/analyze.txt
+            echo '```'
             echo
-            echo '--- erros ---'
-            grep -n -i -m 3 -A 14 -E '^FAILURE|What went wrong|error:|Execution failed' gradle.txt || echo '(sem casamento)'
+            echo '## test (tail)'
             echo '```'
-          } > apk.md
-          gh api -X POST "repos/${GH_REPO}/issues/${PR}/comments" -F body=@apk.md > /dev/null
-          echo "relatório do APK publicado no PR #${PR}"
+            tail -25 out/test.txt
+            echo '```'
+            echo
+            echo '## gradle — fim do log'
+            echo '```'
+            tail -30 out/gradle.txt
+            echo '```'
+            echo
+            echo '## gradle — erros'
+            echo '```'
+            grep -n -i -m 4 -A 16 -E '^FAILURE|What went wrong|Execution failed|error:|FAILED' out/gradle.txt || echo '(sem casamento)'
+            echo '```'
+          } > out/RESUMO.md
+          git config user.email "ci@users.noreply.github.com"
+          git config user.name "CI Diagnóstico"
+          git checkout -B ci-reports
+          mkdir -p reports
+          cp out/RESUMO.md reports/resumo.md
+          cp out/analyze.txt reports/analyze.txt 2>/dev/null || true
+          cp out/test.txt reports/test.txt 2>/dev/null || true
+          tail -c 60000 out/gradle.txt > reports/gradle-tail.txt 2>/dev/null || true
+          git add -f reports
+          git commit -m "relatório de CI ${GITHUB_SHA:0:7}" || echo "nada a commitar"
+          git push --force origin ci-reports
