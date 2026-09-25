@@ -106,8 +106,16 @@ jobs:
       - name: Renomear APK
         run: |
           {
+            set +e          # o runner usa -eo pipefail: queremos o relatório completo
             set -x
             pwd
+            ls -la
+            echo '--- todo .apk no workspace ---'
+            find . -type f -name '*.apk' | head -n 20
+            echo '--- build/ ---'
+            ls -R build 2>&1 | head -n 60
+            echo '--- android/build/ ---'
+            ls -R android/build 2>&1 | head -n 40
             SRC=$(find . -type f -name "app-${{ matrix.type }}.apk" -print 2>/dev/null | head -n 1)
             echo "SRC=$SRC"
             ls -la build/app/outputs/flutter-apk 2>&1
