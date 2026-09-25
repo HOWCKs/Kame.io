@@ -227,7 +227,7 @@ class _MorphPainter extends CustomPainter {
     // brilho especular difuso
     final gloss = Paint()
       ..isAntiAlias = true
-      ..maskFilter = const MaskFilter.blur(BlurStyle.normal, 9)
+      ..maskFilter = ui.MaskFilter.blur(ui.BlurStyle.normal, 9)
       ..shader = ui.Gradient.radial(
         Offset(c.dx - size.width * 0.16, c.dy - size.height * 0.22),
         size.width * 0.24,

@@ -1,0 +1,76 @@
+name: Diagnóstico (temporário)
+
+# Ferramenta de desenvolvimento: roda analyze + test e devolve a saída
+# completa num comentário do PR, para depurar sem acesso aos logs.
+# REMOVER DEPOIS QUE O CI ESTIVER VERDE.
+
+on:
+  push:
+    branches: ['**']
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  issues: write
+  pull-requests: write
+
+jobs:
+  flutter:
+    name: analyze + test (com relatório)
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Configurar Flutter
+        uses: subosito/flutter-action@v2
+        with:
+          flutter-version: '3.24.5'
+          channel: stable
+          cache: true
+
+      - name: Instalar dependências
+        run: flutter pub get
+
+      - name: Analisar
+        run: |
+          set +e
+          flutter analyze --no-fatal-infos > analyze.txt 2>&1
+          echo "EXIT_ANALYZE=$?" >> analyze.txt
+          cat analyze.txt
+
+      - name: Testar
+        run: |
+          set +e
+          flutter test --reporter expanded > test.txt 2>&1
+          echo "EXIT_TEST=$?" >> test.txt
+          tail -60 test.txt
+
+      - name: Comentar relatório no PR
+        if: always()
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GH_REPO: ${{ github.repository }}
+        run: |
+          PR=$(gh pr list --head "${GITHUB_REF_NAME}" --state open --json number --jq '.[0].number')
+          if [ -z "$PR" ]; then echo "sem PR aberto para ${GITHUB_REF_NAME}"; exit 0; fi
+          {
+            echo "### Diagnóstico Flutter · \`${GITHUB_SHA:0:7}\`"
+            echo
+            echo "<details><summary>flutter analyze</summary>"
+            echo
+            echo '```'
+            tail -80 analyze.txt
+            echo '```'
+            echo "</details>"
+            echo
+            echo "<details><summary>flutter test</summary>"
+            echo
+            echo '```'
+            tail -60 test.txt
+            echo '```'
+            echo "</details>"
+          } > body.md
+          gh api -X POST "repos/${GH_REPO}/issues/${PR}/comments" -F body=@body.md > /dev/null
+          echo "relatório publicado no PR #${PR}"
