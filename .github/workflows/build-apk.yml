@@ -13,7 +13,9 @@ on:
           - release
           - both
   push:
-    branches: [main]
+    # main + qualquer branch de trabalho (arena/**) para o APK nascer junto
+    # com o desenvolvimento, não só no merge.
+    branches: [main, 'arena/**']
     tags: ['v*']
 
 concurrency:
@@ -103,13 +105,42 @@ jobs:
 
       - name: Renomear APK
         run: |
-          SRC="build/app/outputs/flutter-apk/app-${{ matrix.type }}.apk"
-          test -f "$SRC" || { echo "::error::APK não encontrado em $SRC"; exit 1; }
-          VERSION=$(grep '^version:' pubspec.yaml | awk '{print $2}' | cut -d+ -f1)
-          DEST="build/app/outputs/flutter-apk/kame-io-${VERSION}-${{ matrix.type }}.apk"
-          mv "$SRC" "$DEST"
-          echo "APK_PATH=$DEST" >> "$GITHUB_ENV"
-          ls -lh "$DEST"
+          {
+            set +e          # o runner usa -eo pipefail: queremos o relatório completo
+            set -x
+            pwd
+            ls -la
+            echo '--- todo .apk no workspace ---'
+            find . -type f -name '*.apk' | head -n 20
+            echo '--- build/ ---'
+            ls -R build 2>&1 | head -n 60
+            echo '--- android/build/ ---'
+            ls -R android/build 2>&1 | head -n 40
+            SRC=$(find . -type f -name "app-${{ matrix.type }}.apk" -print 2>/dev/null | head -n 1)
+            echo "SRC=$SRC"
+            ls -la build/app/outputs/flutter-apk 2>&1
+            test -n "$SRC" || { echo "APK_NAO_ENCONTRADO"; exit 1; }
+            VERSION=$(grep '^version:' pubspec.yaml | awk '{print $2}' | cut -d+ -f1)
+            DEST="build/app/outputs/flutter-apk/kame-io-${VERSION}-${{ matrix.type }}.apk"
+            mv "$SRC" "$DEST"
+            echo "APK_PATH=$DEST" >> "$GITHUB_ENV"
+            ls -lh "$DEST"
+          } > "rename-${{ matrix.type }}.log" 2>&1
+          code=$?
+          cat "rename-${{ matrix.type }}.log"
+          if [ "$code" -ne 0 ]; then
+            LIST=$(find . -type f -name '*.apk' | head -n 10 | tr '\n' ' ')
+            echo "::error title=APK ausente (${{ matrix.type }})::achados=[$LIST]"
+            git config user.email ci@users.noreply.github.com
+            git config user.name "CI Diagnóstico"
+            git checkout -B ci-reports
+            mkdir -p reports
+            cp "rename-${{ matrix.type }}.log" reports/
+            git add -f reports
+            git commit -m "log do rename (${{ matrix.type }})" || true
+            git push --force origin ci-reports || true
+            exit 1
+          fi
 
       - name: Enviar APK como artefato
         uses: actions/upload-artifact@v4

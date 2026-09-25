@@ -6,11 +6,13 @@
 <title>Kame.io — preview da navegação "notch"</title>
 <style>
   :root{
-    --bg:#06070D;
-    --bar:#F4F5F7;
-    --idle:#63697A;
-    --accent:#E8384F;
-    --amber:#F5A623;
+    --bg:#100C14;
+    --bar:#F7F1EA;
+    --idle:#6E6478;
+    --accent:#FF4D5E;
+    --amber:#FFCE63;
+    --ink:#F6EFE9;
+    --muted:#A4939F;
   }
   *{box-sizing:border-box;margin:0;padding:0}
   body{
@@ -47,14 +49,15 @@
   .topbar{position:absolute;top:18px;left:16px;right:16px;display:flex;align-items:center;gap:8px}
   .thumb{
     width:44px;height:44px;border-radius:12px;overflow:hidden;cursor:pointer;
-    border:1px solid rgba(255,255,255,.14);background:rgba(255,255,255,.08);
-    display:grid;place-items:center;color:#8C93B5;font-size:18px;
+    border:1px solid rgba(255,255,255,.18);background:rgba(255,255,255,.10);
+    backdrop-filter:blur(14px);
+    display:grid;place-items:center;color:#D8CCC2;font-size:18px;
   }
   .thumb.has{background:linear-gradient(140deg,#3c6b45,#8a6a44)}
   .spacer{flex:1}
   .rectimer{
     display:none;align-items:center;gap:6px;padding:6px 10px;border-radius:999px;
-    background:rgba(0,0,0,.7);font-weight:600;font-size:12px;font-variant-numeric:tabular-nums;
+    background:rgba(25,19,32,.92);box-shadow:0 8px 18px -10px rgba(0,0,0,.8);font-weight:600;font-size:12px;font-variant-numeric:tabular-nums;
   }
   .rectimer.on{display:flex}
   .recdot{width:8px;height:8px;border-radius:50%;background:var(--accent);animation:pulse 1s infinite}
@@ -68,18 +71,20 @@
   .glow{
     position:absolute;left:50%;top:-35px;width:150px;height:150px;transform:translateX(-50%);
     border-radius:50%;pointer-events:none;
-    background:radial-gradient(closest-side, rgba(124,77,255,.50), rgba(88,101,255,.28) 55%, transparent 78%);
+    background:radial-gradient(closest-side, rgba(255,126,69,.55), rgba(106,91,255,.30) 55%, transparent 78%);
   }
   .fab{
     position:absolute;left:50%;top:0;transform:translateX(-50%);
-    width:80px;height:80px;border-radius:50%;background:#F7F8FA;cursor:pointer;border:0;
-    box-shadow:0 8px 26px rgba(124,77,255,.40);
+    width:80px;height:80px;border-radius:50%;cursor:pointer;border:0;
+    background:linear-gradient(135deg,#FFFDFB,#E9DCCD);
+    box-shadow:0 10px 30px rgba(255,122,69,.45), 0 3px 10px rgba(0,0,0,.30);
     display:grid;place-items:center;
   }
   .fab:active{transform:translateX(-50%) scale(.96)}
   .fab .inner{
     width:64px;height:64px;border-radius:50%;
-    background:linear-gradient(135deg,#FF5A6B,#E11D3C);
+    background:linear-gradient(135deg,#FF7A86,#D7263D);
+    box-shadow:0 6px 18px rgba(215,38,61,.45);
     transition:all .22s cubic-bezier(.22,1,.36,1);
   }
   .fab.recording .inner{width:30px;height:30px;border-radius:9px}
@@ -96,7 +101,8 @@
   /* ---------- sheet de configurações ---------- */
   .sheetbg{position:absolute;inset:0;background:rgba(0,0,0,.5);opacity:0;pointer-events:none;transition:opacity .25s}
   .sheet{
-    position:absolute;left:0;right:0;bottom:0;height:470px;background:#0D1020;
+    position:absolute;left:0;right:0;bottom:0;height:470px;
+    background:rgba(25,19,32,.86);backdrop-filter:blur(20px) saturate(150%);
     border-radius:28px 28px 0 0;transform:translateY(102%);transition:transform .3s cubic-bezier(.22,1,.36,1);
     padding:20px 16px;color:#E8ECFA;
   }
@@ -108,15 +114,25 @@
   .row:last-child{border:0}
   .sw{width:44px;height:26px;border-radius:999px;background:rgba(255,255,255,.18);position:relative;cursor:pointer;transition:background .2s;border:0}
   .sw::after{content:"";position:absolute;top:3px;left:3px;width:20px;height:20px;border-radius:50%;background:#8C93B5;transition:all .2s}
-  .sw.on{background:rgba(110,231,249,.25)}
-  .sw.on::after{left:21px;background:#6EE7F9}
+  .sw.on{background:rgba(255,131,85,.30)}
+  .sw.on::after{left:21px;background:#FF8355}
 
-  .hint{max-width:390px;color:#8C93B5;font-size:13px;text-align:center;line-height:1.6}
-  .hint b{color:#E8ECFA}
+  .hint{max-width:390px;color:#A4939F;font-size:13px;text-align:center;line-height:1.6}
+  .hint b{color:#F6EFE9}
+  .banner{
+    max-width:390px;width:100%;display:flex;align-items:center;justify-content:space-between;gap:12px;
+    padding:12px 16px;border-radius:18px;text-decoration:none;
+    background:linear-gradient(135deg,#FF8355,#7A63FF);color:#FFF7F2;font-weight:700;font-size:13px;
+    box-shadow:0 18px 34px -18px rgba(255,122,69,.75);
+  }
+  .banner span{opacity:.85;font-weight:600}
 </style>
 </head>
 <body>
 <div class="wrap">
+  <a class="banner" href="../cardapio/index.html">
+    Cardápio MORPHIS · ClayMorphist 3D <span>abrir →</span>
+  </a>
   <div class="phone" id="phone">
     <div class="viewfinder" id="vf">
       <div class="vf-blur"></div>
@@ -132,7 +148,10 @@
 
     <div class="barzone">
       <svg class="shape" viewBox="0 0 358 96" preserveAspectRatio="none" aria-hidden="true">
-        <path fill="#F4F5F7" d="M28 0 L127 0 A52 52 0 0 0 231 0 L330 0 A28 28 0 0 1 358 28 L358 68 A28 28 0 0 1 330 96 L28 96 A28 28 0 0 1 0 68 L0 28 A28 28 0 0 1 28 0 Z"/>
+        <defs><linearGradient id="barG" x1="0" y1="0" x2="0" y2="1">
+        <stop offset="0" stop-color="#FFFBF6"/><stop offset="1" stop-color="#EDE2D6"/>
+      </linearGradient></defs>
+      <path fill="url(#barG)" d="M28 0 L127 0 A52 52 0 0 0 231 0 L330 0 A28 28 0 0 1 358 28 L358 68 A28 28 0 0 1 330 96 L28 96 A28 28 0 0 1 0 68 L0 28 A28 28 0 0 1 28 0 Z"/>
       </svg>
       <div class="glow"></div>
 

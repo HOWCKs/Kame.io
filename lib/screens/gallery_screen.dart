@@ -4,6 +4,8 @@ import 'package:flutter/material.dart';
 import 'package:image_picker/image_picker.dart';
 
 import '../theme/kame_theme.dart';
+import '../widgets/clay.dart';
+import '../widgets/clay_morph.dart';
 
 /// Grade de fotos/vídeos capturados ou importados.
 ///
@@ -61,35 +63,34 @@ class _GalleryScreenState extends State<GalleryScreen> {
                 8,
               ),
               child: Row(
-                children: [
-                  if (widget.onClose != null) ...[
-                    IconButton(
-                      onPressed: widget.onClose,
-                      icon: const Icon(Icons.arrow_back_rounded),
-                      color: KameTokens.muted,
+                children: <Widget>[
+                  if (widget.onClose != null) ...<Widget>[
+                    ClayIconButton(
+                      icon: Icons.arrow_back_rounded,
+                      iconColor: ClayTokens.muted,
+                      size: 40,
+                      tooltip: 'Voltar para a câmera',
+                      onTap: widget.onClose!,
                     ),
-                    const SizedBox(width: 4),
+                    const SizedBox(width: 6),
                   ],
                   const Text(
                     'Galeria',
-                    style: TextStyle(fontWeight: FontWeight.w700),
+                    style: TextStyle(fontWeight: FontWeight.w800),
                   ),
-                  const SizedBox(width: 8),
-                  Text(
-                    '${_items.length}',
-                    style: const TextStyle(
-                      color: KameTokens.muted,
-                      fontSize: 12,
+                  const SizedBox(width: 10),
+                  ClayPill(
+                    child: Text(
+                      '${_items.length}',
+                      style: const TextStyle(fontSize: 12, fontWeight: FontWeight.w700),
                     ),
                   ),
                   const Spacer(),
-                  TextButton.icon(
-                    onPressed: _loading ? null : _pick,
-                    icon: const Icon(
-                      Icons.add_photo_alternate_outlined,
-                      size: 18,
-                    ),
-                    label: const Text('Adicionar'),
+                  ClayButton(
+                    label: 'Adicionar',
+                    icon: Icons.add_photo_alternate_outlined,
+                    color: _loading ? ClayTokens.nightRim : ClayTokens.clay,
+                    onTap: _loading ? () {} : () => _pick(),
                   ),
                 ],
               ),
@@ -101,13 +102,9 @@ class _GalleryScreenState extends State<GalleryScreen> {
                         padding: const EdgeInsets.all(32),
                         child: Column(
                           mainAxisAlignment: MainAxisAlignment.center,
-                          children: [
-                            const Icon(
-                              Icons.collections_outlined,
-                              size: 48,
-                              color: KameTokens.muted,
-                            ),
-                            const SizedBox(height: 16),
+                          children: <Widget>[
+                            const ClayMorph(size: 140, color: ClayTokens.violet),
+                            const SizedBox(height: 24),
                             Text(
                               'Nenhuma foto ainda.\nToque no obturador na tela da câmera ou importe da galeria do aparelho.',
                               textAlign: TextAlign.center,
@@ -115,11 +112,12 @@ class _GalleryScreenState extends State<GalleryScreen> {
                                 color: KameTokens.muted.withOpacity(0.9),
                               ),
                             ),
-                            const SizedBox(height: 20),
-                            FilledButton.tonalIcon(
-                              onPressed: _loading ? null : _pick,
-                              icon: const Icon(Icons.folder_open_rounded),
-                              label: const Text('Importar fotos'),
+                            const SizedBox(height: 24),
+                            ClayButton(
+                              label: 'Importar fotos',
+                              icon: Icons.folder_open_rounded,
+                              color: ClayTokens.violet,
+                              onTap: _loading ? () {} : () => _pick(),
                             ),
                           ],
                         ),
@@ -144,37 +142,40 @@ class _GalleryScreenState extends State<GalleryScreen> {
                         final isVideo =
                             item.path.toLowerCase().endsWith('.mp4') ||
                                 item.path.toLowerCase().endsWith('.mov');
-                        return ClipRRect(
-                          borderRadius: BorderRadius.circular(
-                            KameTokens.radiusCard / 2,
-                          ),
-                          child: Stack(
-                            fit: StackFit.expand,
-                            children: [
-                              if (isVideo)
-                                const ColoredBox(color: Color(0xFF20263E))
-                              else
-                                Image.file(
-                                  File(item.path),
-                                  fit: BoxFit.cover,
-                                  errorBuilder: (context, error, stack) =>
-                                      ColoredBox(
-                                    color: KameTokens.surface,
-                                    child: const Icon(
-                                      Icons.broken_image_outlined,
-                                      color: KameTokens.muted,
+                        return ClaySurface(
+                          radius: ClayTokens.rSm,
+                          depth: 5,
+                          color: ClayTokens.nightSoft,
+                          child: ClipRRect(
+                            borderRadius: BorderRadius.circular(ClayTokens.rSm),
+                            child: Stack(
+                              fit: StackFit.expand,
+                              children: <Widget>[
+                                if (isVideo)
+                                  const ColoredBox(color: Color(0xFF20263E))
+                                else
+                                  Image.file(
+                                    File(item.path),
+                                    fit: BoxFit.cover,
+                                    errorBuilder: (context, error, stack) =>
+                                        const ColoredBox(
+                                      color: KameTokens.surface,
+                                      child: Icon(
+                                        Icons.broken_image_outlined,
+                                        color: KameTokens.muted,
+                                      ),
                                     ),
                                   ),
-                                ),
-                              if (isVideo)
-                                const Center(
-                                  child: Icon(
-                                    Icons.play_circle_outline_rounded,
-                                    color: KameTokens.primary,
-                                    size: 34,
+                                if (isVideo)
+                                  const Center(
+                                    child: Icon(
+                                      Icons.play_circle_outline_rounded,
+                                      color: KameTokens.primary,
+                                      size: 34,
+                                    ),
                                   ),
-                                ),
-                            ],
+                              ],
+                            ),
                           ),
                         );
                       },

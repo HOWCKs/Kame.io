@@ -1,0 +1,12 @@
+{
+  "name": "morphis-cardapio",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Cardápio digital MORPHIS — app estático (HTML/CSS/JS puro) com o design system ClayMorphist 3D.",
+  "scripts": {
+    "test": "node tests/smoke.mjs"
+  },
+  "devDependencies": {
+    "jsdom": "^30.0.0"
+  }
+}

@@ -5,6 +5,8 @@ import 'package:camera/camera.dart';
 import 'package:flutter/material.dart';
 
 import '../theme/kame_theme.dart';
+import '../widgets/clay.dart';
+import '../widgets/clay_morph.dart';
 import '../widgets/notched_camera_bar.dart';
 import 'gallery_screen.dart';
 import 'settings_screen.dart';
@@ -275,55 +277,60 @@ class _CameraScreenState extends State<CameraScreen>
   Widget _buildViewfinder() {
     final camera = _controller;
     if (_error != null) {
-      return _Message(icon: Icons.videocam_off_outlined, text: _error!);
+      return _Message(
+        icon: Icons.videocam_off_outlined,
+        text: _error!,
+        tint: ClayTokens.danger,
+        onRetry: () => _bootstrap(),
+      );
     }
     if (camera == null || !_ready || !camera.value.isInitialized) {
       return const _Message(
         icon: Icons.photo_camera_outlined,
         text: 'Iniciando a câmera…',
+        tint: ClayTokens.clay,
         spinner: true,
       );
     }
-    return CameraPreview(camera);
+    return ClipRRect(
+      borderRadius: BorderRadius.circular(ClayTokens.rLg),
+      child: CameraPreview(camera),
+    );
   }
 
   Widget _buildTopBar() {
     return Padding(
       padding: const EdgeInsets.fromLTRB(16, 8, 16, 8),
       child: Row(
-        children: [
+        children: <Widget>[
           // Última foto/vídeo — abre a galeria.
           GestureDetector(
             onTap: () => setState(() => _showGallery = true),
-            child: Container(
-              width: 44,
-              height: 44,
-              decoration: BoxDecoration(
-                borderRadius: BorderRadius.circular(12),
-                border: Border.all(color: KameTokens.glassStroke),
-                color: KameTokens.glassFill,
+            child: ClaySurface(
+              width: 46,
+              height: 46,
+              radius: ClayTokens.rSm,
+              depth: 5,
+              color: ClayTokens.nightSoft,
+              child: ClipRRect(
+                borderRadius: BorderRadius.circular(ClayTokens.rSm - 2),
+                child: _lastMedia == null
+                    ? const Icon(
+                        Icons.photo_library_outlined,
+                        size: 20,
+                        color: KameTokens.muted,
+                      )
+                    : _thumb(_lastMedia!),
               ),
-              clipBehavior: Clip.antiAlias,
-              child: _lastMedia == null
-                  ? const Icon(
-                      Icons.photo_library_outlined,
-                      size: 20,
-                      color: KameTokens.muted,
-                    )
-                  : _thumb(_lastMedia!),
             ),
           ),
           const Spacer(),
           if (_recording)
-            Container(
-              padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
-              decoration: BoxDecoration(
-                color: const Color(0xB3000000),
-                borderRadius: BorderRadius.circular(999),
-              ),
+            ClayPill(
+              color: ClayTokens.nightSoft,
               child: Row(
                 mainAxisSize: MainAxisSize.min,
-                children: [
+                children: <Widget>[
                   Container(
                     width: 8,
                     height: 8,
@@ -332,22 +339,38 @@ class _CameraScreenState extends State<CameraScreen>
                       shape: BoxShape.circle,
                     ),
                   ),
-                  const SizedBox(width: 6),
+                  const SizedBox(width: 7),
                   Text(
                     _recLabel,
                     style: const TextStyle(
                       fontSize: 12,
-                      fontWeight: FontWeight.w600,
-                      fontFeatures: [FontFeature.tabularFigures()],
+                      fontWeight: FontWeight.w700,
+                      fontFeatures: <FontFeature>[FontFeature.tabularFigures()],
                     ),
                   ),
                 ],
               ),
+            ),
+          const SizedBox(width: 10),
+          Row(
+            children: <Widget>[
+              Container(
+                width: 9,
+                height: 9,
+                decoration: const BoxDecoration(
+                  color: ClayTokens.clay,
+                  shape: BoxShape.circle,
+                ),
               ),
-          const SizedBox(width: 8),
-          const Text(
-            'Kame.io',
-            style: TextStyle(fontWeight: FontWeight.w700, letterSpacing: 0.4),
+              const SizedBox(width: 7),
+              const Text(
+                'Kame.io',
+                style: TextStyle(
+                  fontWeight: FontWeight.w800,
+                  letterSpacing: 0.4,
+                ),
+              ),
+            ],
           ),
         ],
       ),
@@ -386,58 +409,113 @@ class _SettingsSheet extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final bottom = MediaQuery.of(context).padding.bottom;
-    return ClipRRect(
-      borderRadius: const BorderRadius.vertical(top: Radius.circular(28)),
-      child: Container(
-        height: 460 + bottom,
-        color: KameTokens.surface,
-        child: Stack(
-          children: [
-            const Positioned.fill(child: SettingsScreen(embedded: true)),
-            Positioned(
-              top: 10,
-              right: 10,
-              child: IconButton(
-                onPressed: onClose,
-                icon: const Icon(Icons.close_rounded),
-                color: KameTokens.muted,
+    return Container(
+      height: 460 + bottom,
+      decoration: const BoxDecoration(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(ClayTokens.rXl)),
+      ),
+      child: Stack(
+        children: <Widget>[
+          const Positioned.fill(
+            child: GlassPanel(
+              radius: ClayTokens.rXl,
+              padding: EdgeInsets.zero,
+              child: SettingsScreen(embedded: true),
+            ),
+          ),
+          // alça de arraste
+          Positioned(
+            top: 10,
+            left: 0,
+            right: 0,
+            child: Center(
+              child: Container(
+                width: 44,
+                height: 5,
+                decoration: BoxDecoration(
+                  borderRadius: BorderRadius.circular(99),
+                  color: ClayTokens.glassRim,
+                ),
               ),
             ),
-          ],
-        ),
+          ),
+          Positioned(
+            top: 10,
+            right: 10,
+            child: ClayIconButton(
+              icon: Icons.close_rounded,
+              iconColor: ClayTokens.muted,
+              size: 40,
+              tooltip: 'Fechar ajustes',
+              onTap: onClose,
+            ),
+          ),
+        ],
       ),
     );
   }
 }
 
+/// Estado de carregamento, vazio e erro — todos com a mesma linguagem de
+/// matéria: um núcleo de argila, uma frase curta e uma saída clara.
 class _Message extends StatelessWidget {
-  const _Message({required this.icon, required this.text, this.spinner = false});
+  const _Message({
+    required this.icon,
+    required this.text,
+    this.spinner = false,
+    this.tint,
+    this.onRetry,
+  });
 
   final IconData icon;
   final String text;
   final bool spinner;
+  final Color? tint;
+  final VoidCallback? onRetry;
 
   @override
   Widget build(BuildContext context) {
+    final color = tint ?? ClayTokens.clay;
     return Center(
       child: Padding(
         padding: const EdgeInsets.all(32),
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            Icon(icon, size: 48, color: KameTokens.muted),
-            const SizedBox(height: 16),
+          children: <Widget>[
+            if (spinner)
+              ClayMorph(size: 136, color: color)
+            else
+              ClaySurface(
+                width: 96,
+                height: 96,
+                radius: ClayTokens.rXl,
+                depth: 8,
+                color: ClayTokens.nightSoft,
+                shadows: ClayTokens.lift,
+                align: Alignment.center,
+                child: Icon(icon, size: 34, color: color),
+              ),
+            const SizedBox(height: 22),
             Text(
               text,
               textAlign: TextAlign.center,
               style: const TextStyle(color: KameTokens.muted),
             ),
-            if (spinner) ...[
+            if (spinner) ...<Widget>[
               const SizedBox(height: 20),
               const SizedBox(
                 width: 22,
                 height: 22,
                 child: CircularProgressIndicator(strokeWidth: 2),
+              ),
+            ],
+            if (onRetry != null) ...<Widget>[
+              const SizedBox(height: 24),
+              ClayButton(
+                label: 'Tentar de novo',
+                icon: Icons.refresh_rounded,
+                color: ClayTokens.clay,
+                onTap: onRetry!,
               ),
             ],
           ],

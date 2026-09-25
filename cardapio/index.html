@@ -1,0 +1,293 @@
+<!DOCTYPE html>
+<html lang="pt-BR" data-theme="day">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+<title>MORPHIS · Cardápio de lanches</title>
+<meta name="description" content="Cardápio digital MORPHIS. Lanches autorais, porções, bebidas e sobremesas em uma experiência ClayMorphist 3D." />
+<meta name="theme-color" content="#F7F1EA" media="(prefers-color-scheme: light)" />
+<meta name="theme-color" content="#100C14" media="(prefers-color-scheme: dark)" />
+<meta property="og:title" content="MORPHIS · Cardápio de lanches" />
+<meta property="og:description" content="Matéria que vira desejo. Monte seu pedido em uma interface que se molda a você." />
+<meta property="og:type" content="website" />
+
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,500;9..144,600;9..144,700&family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" />
+<link rel="stylesheet" href="assets/css/tokens.css" />
+<link rel="stylesheet" href="assets/css/app.css" />
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Cdefs%3E%3CradialGradient id='g' cx='35%25' cy='28%25'%3E%3Cstop offset='0' stop-color='%23FFB08A'/%3E%3Cstop offset='.55' stop-color='%23FF6A3D'/%3E%3Cstop offset='1' stop-color='%23C33F1E'/%3E%3C/radialGradient%3E%3C/defs%3E%3Ccircle cx='50' cy='52' r='44' fill='url(%23g)'/%3E%3C/svg%3E" />
+</head>
+<body>
+
+<!-- ═══ matéria de fundo ═══════════════════════════════════════════════ -->
+<div class="backdrop" aria-hidden="true">
+  <div class="orb orb--1"></div>
+  <div class="orb orb--2"></div>
+  <div class="orb orb--3"></div>
+  <div class="grain"></div>
+</div>
+
+<a class="skip-link" href="#cardapio">Ir direto para o cardápio</a>
+
+<!-- ═══ cabeçalho ══════════════════════════════════════════════════════ -->
+<header class="site-header" id="top">
+  <div class="shell header-inner">
+    <a class="brand" href="#top" aria-label="MORPHIS, início">
+      <span class="brand__mark" aria-hidden="true">
+        <svg viewBox="0 0 48 48" role="presentation">
+          <defs>
+            <radialGradient id="brandG" cx="34%" cy="26%" r="78%">
+              <stop offset="0" stop-color="#FFC9A6"/>
+              <stop offset=".5" stop-color="#FF7A45"/>
+              <stop offset="1" stop-color="#C43C1B"/>
+            </radialGradient>
+          </defs>
+          <path id="brandBlob" fill="url(#brandG)" d=""/>
+        </svg>
+      </span>
+      <span class="brand__text">
+        <strong>MORPHIS</strong>
+        <em>lanchonete autoral</em>
+      </span>
+    </a>
+
+    <nav class="nav" aria-label="Seções">
+      <a href="#cardapio">Cardápio</a>
+      <a href="#combos">Combos</a>
+      <a href="#sobre">Casa</a>
+    </nav>
+
+    <div class="header-tools">
+      <div class="search glass" role="search">
+        <svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="11" cy="11" r="6.5"/><path d="M16 16l4.5 4.5"/></svg>
+        <input id="search" type="search" placeholder="Buscar lanche, porção, bebida…" aria-label="Buscar no cardápio" autocomplete="off" />
+        <kbd>/</kbd>
+      </div>
+
+      <button class="icon-btn glass" id="themeToggle" type="button" aria-pressed="false" aria-label="Alternar tema claro e escuro" title="Alternar tema">
+        <svg class="i-sun" viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="4.2"/><path d="M12 3v2M12 19v2M3 12h2M19 12h2M5.6 5.6l1.4 1.4M17 17l1.4 1.4M18.4 5.6L17 7M7 17l-1.4 1.4"/></svg>
+        <svg class="i-moon" viewBox="0 0 24 24" aria-hidden="true"><path d="M20 14.5A8.5 8.5 0 1 1 9.5 4a7 7 0 0 0 10.5 10.5z"/></svg>
+      </button>
+
+      <button class="cart-btn clay" id="cartOpen" type="button" aria-label="Abrir pedido" aria-expanded="false" aria-controls="cartDrawer">
+        <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 7h15l-1.6 9.2a2 2 0 0 1-2 1.7H8.1a2 2 0 0 1-2-1.6L4.4 4.8A1 1 0 0 0 3.4 4H2.4"/><circle cx="9.5" cy="20" r="1.4"/><circle cx="17" cy="20" r="1.4"/></svg>
+        <span class="cart-btn__label">Pedido</span>
+        <span class="cart-btn__count" id="cartCount" data-empty="true">0</span>
+      </button>
+    </div>
+  </div>
+</header>
+
+<main>
+  <!-- ═══ hero ══════════════════════════════════════════════════════════ -->
+  <section class="hero shell" aria-labelledby="heroTitle">
+    <div class="hero__copy">
+      <p class="eyebrow reveal"><span class="dot"></span> ClayMorphist · cardápio vivo</p>
+      <h1 id="heroTitle" class="reveal">
+        Matéria que vira <span class="ink-accent">desejo</span>.<br />
+        Pedido que se molda a você.
+      </h1>
+      <p class="hero__lead reveal">
+        Smash de carne maturada, pão brioche assado agora e porções que chegam
+        crocantes. Escolha, ajuste e mande para a cozinha em três toques.
+      </p>
+
+      <div class="hero__cta reveal">
+        <a class="btn btn--primary clay" href="#cardapio">
+          Ver cardápio
+          <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 12h13M12 6l6 6-6 6"/></svg>
+        </a>
+        <a class="btn btn--ghost glass" href="#combos">Combos do dia</a>
+      </div>
+
+      <dl class="hero__stats reveal">
+        <div><dt>Preparo médio</dt><dd>18<span>min</span></dd></div>
+        <div><dt>Avaliação</dt><dd>4,9<span>/5</span></dd></div>
+        <div><dt>Lanches na casa</dt><dd>32<span>itens</span></dd></div>
+      </dl>
+    </div>
+
+    <div class="hero__stage reveal" id="stage" aria-hidden="true">
+      <div class="stage__halo"></div>
+      <div class="stage__3d" id="stage3d">
+        <svg class="morph" id="morph" viewBox="-140 -140 280 280" role="presentation">
+          <g id="morphLayers"></g>
+          <g id="morphFace">
+            <path id="morphTop" d=""/>
+          </g>
+          <ellipse id="morphGloss" cx="-34" cy="-46" rx="46" ry="30" />
+          <g id="morphSpark" class="morph__spark"></g>
+        </svg>
+      </div>
+      <div class="stage__shadow" id="stageShadow"></div>
+      <p class="stage__hint" id="stageHint">arraste · a forma responde</p>
+    </div>
+  </section>
+
+  <!-- ═══ cardápio ═════════════════════════════════════════════════════ -->
+  <section class="section shell" id="cardapio" aria-labelledby="menuTitle">
+    <header class="section__head reveal">
+      <div>
+        <p class="eyebrow"><span class="dot"></span> O cardápio</p>
+        <h2 id="menuTitle">Escolha a forma do seu pedido</h2>
+      </div>
+      <div class="sort glass" role="group" aria-label="Ordenar itens">
+        <button type="button" data-sort="popular" class="is-on">Mais pedidos</button>
+        <button type="button" data-sort="price">Menor preço</button>
+        <button type="button" data-sort="time">Mais rápido</button>
+      </div>
+    </header>
+
+    <div class="rail reveal" id="rail" role="tablist" aria-label="Categorias do cardápio"></div>
+
+    <div class="grid" id="menuGrid" aria-live="polite"></div>
+
+    <div class="empty-state" id="emptyState" hidden>
+      <div class="empty-state__clay" aria-hidden="true">
+        <svg viewBox="-60 -60 120 120"><path id="emptyBlob" d=""/></svg>
+      </div>
+      <h3>Nada com esse nome por aqui.</h3>
+      <p>Tente “smash”, “batata” ou “milkshake”. Se não existir no cardápio, a cozinha não faz — e a gente prefere avisar antes.</p>
+      <button class="btn btn--primary clay" type="button" data-reset>Limpar busca</button>
+    </div>
+  </section>
+
+  <!-- ═══ combos ═══════════════════════════════════════════════════════ -->
+  <section class="section shell" id="combos" aria-labelledby="comboTitle">
+    <header class="section__head reveal">
+      <div>
+        <p class="eyebrow"><span class="dot"></span> Combos</p>
+        <h2 id="comboTitle">Três curadorias da casa</h2>
+      </div>
+      <p class="section__note">Montados pela cozinha, com desconto real — não é “a partir de”.</p>
+    </header>
+    <div class="combos" id="comboGrid"></div>
+  </section>
+
+  <!-- ═══ sobre / confiança ════════════════════════════════════════════ -->
+  <section class="section shell" id="sobre" aria-labelledby="sobreTitle">
+    <div class="about reveal">
+      <div class="about__copy">
+        <p class="eyebrow"><span class="dot"></span> A casa</p>
+        <h2 id="sobreTitle">Cozinha aberta, forno ligado, fila honesta.</h2>
+        <p>
+          Blend de fraldinha moído na hora, pão de brioche de fermentação lenta e
+          molhos da casa. Sem congelado, sem atalho — o tempo de preparo existe
+          porque o lanche é feito depois do seu toque.
+        </p>
+        <ul class="about__list">
+          <li><strong>Retirada em 18 min</strong><span>Você avisa, a gente assa.</span></li>
+          <li><strong>Entrega até 6 km</strong><span>Embalagem térmica, batata ainda crocante.</span></li>
+          <li><strong>Troca sem discussão</strong><span>Algo errado? Refazemos na hora.</span></li>
+        </ul>
+      </div>
+      <div class="about__card clay">
+        <p class="about__quote">“O Morphis é o único lugar em que eu peço o mesmo lanche toda semana e ele continua me surpreendendo.”</p>
+        <footer>
+          <span class="about__avatar" aria-hidden="true">CL</span>
+          <span>
+            <strong>Camila Lemos</strong>
+            <em>212 pedidos · cliente desde 2023</em>
+          </span>
+        </footer>
+      </div>
+    </div>
+  </section>
+</main>
+
+<!-- ═══ rodapé ═════════════════════════════════════════════════════════ -->
+<footer class="site-footer">
+  <div class="shell footer-inner">
+    <div>
+      <p class="footer__brand">MORPHIS</p>
+      <p class="footer__meta">Rua das Formas, 128 — Vila Madalena, São Paulo/SP<br />Ter a dom · 18h às 23h30 · cozinha aberta</p>
+    </div>
+    <div class="footer__cols">
+      <div>
+        <h3>Atendimento</h3>
+        <a href="https://wa.me/5511999999999" target="_blank" rel="noopener">WhatsApp (11) 99999-9999</a>
+        <a href="mailto:oi@morphis.com.br">oi@morphis.com.br</a>
+      </div>
+      <div>
+        <h3>Casa</h3>
+        <a href="#cardapio">Cardápio</a>
+        <a href="#combos">Combos</a>
+        <a href="#sobre">Nossa cozinha</a>
+      </div>
+      <div>
+        <h3>Interfaces</h3>
+        <p>Design system <strong>ClayMorphist</strong> — matéria, vidro e luz.</p>
+      </div>
+    </div>
+  </div>
+</footer>
+
+<!-- ═══ barra móvel ════════════════════════════════════════════════════ -->
+<div class="mobile-bar" id="mobileBar">
+  <button class="mobile-bar__main clay" id="mobileCartOpen" type="button">
+    <span class="mobile-bar__count" id="mobileCount">0 itens</span>
+    <span class="mobile-bar__total" id="mobileTotal">R$ 0,00</span>
+  </button>
+</div>
+
+<!-- ═══ gaveta do pedido ═══════════════════════════════════════════════ -->
+<aside class="drawer glass" id="cartDrawer" aria-labelledby="cartTitle" role="dialog" aria-modal="true" hidden>
+  <header class="drawer__head">
+    <div>
+      <h2 id="cartTitle">Seu pedido</h2>
+      <p id="cartSub">Matéria-prima escolhida, nada cozido ainda.</p>
+    </div>
+    <button class="icon-btn glass" id="cartClose" type="button" aria-label="Fechar pedido">
+      <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6 6l12 12M18 6L6 18"/></svg>
+    </button>
+  </header>
+
+  <div class="drawer__body" id="cartBody"></div>
+
+  <footer class="drawer__foot" id="cartFoot" hidden>
+    <div class="mode clay" role="radiogroup" aria-label="Forma de entrega">
+      <button type="button" role="radio" aria-checked="true" data-mode="pickup" class="is-on">Retirada<em>grátis</em></button>
+      <button type="button" role="radio" aria-checked="false" data-mode="delivery">Entrega<em>R$ 6,90</em></button>
+    </div>
+    <dl class="totals">
+      <div><dt>Subtotal</dt><dd id="sumSubtotal">R$ 0,00</dd></div>
+      <div><dt>Entrega</dt><dd id="sumDelivery">—</dd></div>
+      <div class="totals__grand"><dt>Total</dt><dd id="sumTotal">R$ 0,00</dd></div>
+    </dl>
+    <button class="btn btn--primary clay btn--block" id="checkout" type="button">
+      Finalizar pedido
+      <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 12h13M12 6l6 6-6 6"/></svg>
+    </button>
+    <p class="drawer__legal">Você revisa tudo antes de enviar. Nenhum pagamento acontece aqui.</p>
+  </footer>
+</aside>
+
+<!-- ═══ detalhe do item ════════════════════════════════════════════════ -->
+<div class="sheet-wrap" id="itemSheet" hidden>
+  <div class="sheet-scrim" data-close-sheet></div>
+  <div class="sheet glass" role="dialog" aria-modal="true" aria-labelledby="sheetTitle"></div>
+</div>
+
+<!-- ═══ checkout ═══════════════════════════════════════════════════════ -->
+<div class="sheet-wrap" id="orderSheet" hidden>
+  <div class="sheet-scrim" data-close-sheet></div>
+  <div class="sheet sheet--order glass" role="dialog" aria-modal="true" aria-labelledby="orderTitle"></div>
+</div>
+
+<div class="toasts" id="toasts" role="status" aria-live="polite"></div>
+<div class="sr-only" id="liveRegion" aria-live="polite"></div>
+
+<noscript>
+  <div class="noscript">
+    <h2>O cardápio precisa de JavaScript para montar os itens.</h2>
+    <p>Para pedir agora, chame no WhatsApp <a href="https://wa.me/5511999999999">(11) 99999-9999</a>.</p>
+  </div>
+</noscript>
+
+<script src="assets/js/data.js"></script>
+<script src="assets/js/clay-glyphs.js"></script>
+<script src="assets/js/morph.js"></script>
+<script src="assets/js/app.js"></script>
+</body>
+</html>

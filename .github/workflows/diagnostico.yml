@@ -1,0 +1,112 @@
+name: Diagnóstico (temporário)
+
+# Ferramenta de desenvolvimento: roda analyze + test + build Android e
+# publica os relatórios crus no branch `ci-reports` (o download de logs do
+# Actions não está disponível no ambiente de desenvolvimento).
+# REMOVER DEPOIS QUE O CI ESTIVER VERDE.
+
+on:
+  push:
+    branches: ['arena/**']
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  report:
+    name: Relatório (analyze + test + APK)
+    runs-on: ubuntu-latest
+    timeout-minutes: 35
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Configurar Java 17
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+
+      - name: Configurar Flutter
+        uses: subosito/flutter-action@v2
+        with:
+          flutter-version: '3.24.5'
+          channel: stable
+          cache: true
+
+      - name: Instalar dependências
+        run: flutter pub get
+
+      - name: Preparar saída
+        run: mkdir -p out
+
+      - name: Analisar
+        run: |
+          set +e
+          flutter analyze --no-fatal-infos > out/analyze.txt 2>&1
+          echo "EXIT_ANALYZE=$?" >> out/analyze.txt
+
+      - name: Testar
+        run: |
+          set +e
+          mkdir -p out
+          flutter test --reporter compact > out/test.txt 2>&1
+          echo "EXIT_TEST=$?" >> out/test.txt
+
+      - name: Compilar APK (debug)
+        working-directory: android
+        run: |
+          set +e
+          mkdir -p ../out
+          ./gradlew assembleDebug --no-daemon --stacktrace > ../out/gradle.txt 2>&1
+          echo "EXIT_GRADLE=$?" >> ../out/gradle.txt
+          {
+            echo
+            echo "=== APKs encontrados ==="
+            find "$GITHUB_WORKSPACE" -type f -name '*.apk' | head -n 20
+            echo "=== outputs ==="
+            ls -R "$GITHUB_WORKSPACE/build/app/outputs" 2>/dev/null | head -n 40
+            echo "=== android/build outputs ==="
+            ls -R "$GITHUB_WORKSPACE/android/build/app/outputs" 2>/dev/null | head -n 40
+          } >> ../out/gradle.txt
+
+      - name: Publicar relatórios no branch ci-reports
+        if: always()
+        run: |
+          mkdir -p out
+          : > out/RESUMO.md
+          {
+            echo "# Relatório ${GITHUB_SHA}"
+            echo
+            echo '## analyze (tail)'
+            echo '```'
+            tail -20 out/analyze.txt
+            echo '```'
+            echo
+            echo '## test (tail)'
+            echo '```'
+            tail -25 out/test.txt
+            echo '```'
+            echo
+            echo '## gradle — fim do log'
+            echo '```'
+            tail -30 out/gradle.txt
+            echo '```'
+            echo
+            echo '## gradle — erros'
+            echo '```'
+            grep -n -i -m 4 -A 16 -E '^FAILURE|What went wrong|Execution failed|error:|FAILED' out/gradle.txt || echo '(sem casamento)'
+            echo '```'
+          } > out/RESUMO.md
+          git config user.email "ci@users.noreply.github.com"
+          git config user.name "CI Diagnóstico"
+          git checkout -B ci-reports
+          mkdir -p reports
+          cp out/RESUMO.md reports/resumo.md
+          cp out/analyze.txt reports/analyze.txt 2>/dev/null || true
+          cp out/test.txt reports/test.txt 2>/dev/null || true
+          tail -c 60000 out/gradle.txt > reports/gradle-tail.txt 2>/dev/null || true
+          git add -f reports
+          git commit -m "relatório de CI ${GITHUB_SHA:0:7}" || echo "nada a commitar"
+          git push --force origin ci-reports

@@ -3,12 +3,17 @@ import 'dart:math' as math;
 import 'package:camera/camera.dart';
 import 'package:flutter/material.dart';
 
+import '../theme/kame_theme.dart';
+
 enum CaptureMode { foto, video }
 
-/// Barra de controle da câmera no estilo "notch": cartão branco arredondado
-/// com um recorte côncavo circular no topo, onde o obturador fica encaixado
-/// metade para fora, com glow colorido — mesma linguagem visual das
-/// referências enviadas pelo usuário.
+/// Barra de controle da câmera no estilo "notch": cartão de argila clara com
+/// um recorte côncavo circular no topo, onde o obturador fica encaixado
+/// metade para fora, com brilho de matéria — a mesma geometria das
+/// referências, agora com a linguagem CLAY MORPHIST.
+///
+/// A geometria (altura, raio do notch, recorte) é pública para o shape, o
+/// obturador e os testes ficarem de acordo.
 class NotchedCameraBar extends StatelessWidget {
   const NotchedCameraBar({
     super.key,
@@ -31,15 +36,15 @@ class NotchedCameraBar extends StatelessWidget {
   final VoidCallback onFlash;
   final VoidCallback onConfig;
 
-  /// Geometria pública para o shape, o FAB e os testes ficarem de acordo.
   static const double barHeight = 96;
   static const double cornerRadius = 28;
   static const double notchRadius = 52;
-  static const double fabRadius = 40; // diâmetro 80, contando o anel branco
+  static const double fabRadius = 40; // diâmetro 80, contando o anel
 
-  static const Color barColor = Color(0xFFF4F5F7);
-  static const Color idleGrey = Color(0xFF63697A);
-  static const Color accent = Color(0xFFE8384F);
+  /// Porcelana morna — a matéria clara da barra.
+  static const Color barColor = Color(0xFFF7F1EA);
+  static const Color idleGrey = Color(0xFF6E6478);
+  static const Color accent = Color(0xFFFF4D5E);
 
   @override
   Widget build(BuildContext context) {
@@ -47,8 +52,33 @@ class NotchedCameraBar extends StatelessWidget {
       height: barHeight + fabRadius,
       child: Stack(
         clipBehavior: Clip.none,
-        children: [
-          // O cartão branco com o recorte côncavo.
+        children: <Widget>[
+          // Halo de matéria vazando do notch, atrás do cartão.
+          Positioned(
+            left: 0,
+            right: 0,
+            top: fabRadius - 78,
+            child: Center(
+              child: IgnorePointer(
+                child: Container(
+                  width: 158,
+                  height: 158,
+                  decoration: const BoxDecoration(
+                    shape: BoxShape.circle,
+                    gradient: RadialGradient(
+                      colors: <Color>[
+                        Color(0x99FF9E6B),
+                        Color(0x666A5BFF),
+                        Color(0x00000000),
+                      ],
+                      stops: <double>[0.28, 0.56, 0.78],
+                    ),
+                  ),
+                ),
+              ),
+            ),
+          ),
+          // O cartão claro com o recorte côncavo.
           Positioned(
             left: 0,
             right: 0,
@@ -57,33 +87,17 @@ class NotchedCameraBar extends StatelessWidget {
             child: PhysicalShape(
               clipper: const ShapeBorderClipper(shape: NotchedBarShape()),
               color: barColor,
-              shadowColor: const Color(0x66000000),
+              shadowColor: const Color(0x99000000),
               elevation: 18,
-              child: _buildItems(),
-            ),
-          ),
-          // Glow roxo/azul vazando do notch, por cima do cartão.
-          Positioned(
-            left: 0,
-            right: 0,
-            top: fabRadius - 75,
-            child: Center(
-              child: IgnorePointer(
-                child: Container(
-                  width: 150,
-                  height: 150,
-                  decoration: const BoxDecoration(
-                    shape: BoxShape.circle,
-                    gradient: RadialGradient(
-                      colors: [
-                        Color(0x807C4DFF),
-                        Color(0x475865FF),
-                        Color(0x00000000),
-                      ],
-                      stops: [0.30, 0.55, 0.78],
-                    ),
+              child: DecoratedBox(
+                decoration: const BoxDecoration(
+                  gradient: LinearGradient(
+                    begin: Alignment.topCenter,
+                    end: Alignment.bottomCenter,
+                    colors: <Color>[Color(0xFFFFFBF6), Color(0xFFEDE2D6)],
                   ),
                 ),
+                child: _buildItems(),
               ),
             ),
           ),
@@ -101,11 +115,11 @@ class NotchedCameraBar extends StatelessWidget {
 
   Widget _buildItems() {
     return Row(
-      children: [
+      children: <Widget>[
         Expanded(
           child: Row(
             mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-            children: [
+            children: <Widget>[
               _BarAction(
                 icon: Icons.photo_camera_outlined,
                 label: 'Foto',
@@ -122,11 +136,11 @@ class NotchedCameraBar extends StatelessWidget {
           ),
         ),
         // Vão central do notch.
-        SizedBox(width: notchRadius * 2 - 16),
+        const SizedBox(width: notchRadius * 2 - 16),
         Expanded(
           child: Row(
             mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-            children: [
+            children: <Widget>[
               _BarAction(
                 icon: Icons.flip_camera_android_outlined,
                 label: 'Virar',
@@ -138,7 +152,7 @@ class NotchedCameraBar extends StatelessWidget {
                     : Icons.flash_on_rounded,
                 label: 'Flash',
                 selected: flash != FlashMode.off,
-                selectedColor: const Color(0xFFF5A623),
+                selectedColor: ClayTokens.sun,
                 onTap: onFlash,
               ),
               _BarAction(
@@ -154,7 +168,8 @@ class NotchedCameraBar extends StatelessWidget {
   }
 }
 
-class _BarAction extends StatelessWidget {
+/// Ação da barra: pílula de argila que afunda quando selecionada.
+class _BarAction extends StatefulWidget {
   const _BarAction({
     required this.icon,
     required this.label,
@@ -170,32 +185,85 @@ class _BarAction extends StatelessWidget {
   final Color selectedColor;
 
   @override
+  State<_BarAction> createState() => _BarActionState();
+}
+
+class _BarActionState extends State<_BarAction> {
+  bool _pressed = false;
+
+  @override
   Widget build(BuildContext context) {
-    final color = selected ? selectedColor : NotchedCameraBar.idleGrey;
+    final color = widget.selected ? widget.selectedColor : NotchedCameraBar.idleGrey;
+    final tint = widget.selected
+        ? widget.selectedColor.withOpacity(0.18)
+        : const Color(0x14000000);
+
     return Material(
       color: Colors.transparent,
       child: InkWell(
-        onTap: onTap,
-        borderRadius: BorderRadius.circular(14),
+        onTap: widget.onTap,
+        onTapDown: (_) => setState(() => _pressed = true),
+        onTapUp: (_) => setState(() => _pressed = false),
+        onTapCancel: () => setState(() => _pressed = false),
+        borderRadius: BorderRadius.circular(ClayTokens.rSm),
         splashColor: NotchedCameraBar.accent.withOpacity(0.12),
-        child: SizedBox(
-          width: 58,
-          height: 64,
-          child: Column(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              Icon(icon, size: 23, color: color),
-              const SizedBox(height: 4),
-              Text(
-                label,
-                style: TextStyle(
-                  fontSize: 10.5,
-                  height: 1,
-                  fontWeight: selected ? FontWeight.w700 : FontWeight.w500,
-                  color: color,
+          child: AnimatedScale(
+          scale: _pressed ? 0.9 : 1,
+          duration: ClayTokens.fast,
+          curve: ClayTokens.spring,
+          child: SizedBox(
+            width: 60,
+            height: 66,
+            child: Stack(
+              alignment: Alignment.center,
+              children: <Widget>[
+                // base neutra + tinta de seleção em camadas (sem
+                // AnimatedContainer: o obturador é o único da barra)
+                Container(
+                  margin: const EdgeInsets.symmetric(vertical: 6),
+                  decoration: BoxDecoration(
+                    borderRadius: BorderRadius.circular(ClayTokens.rSm),
+                    color: const Color(0x0F000000),
+                  ),
                 ),
-              ),
-            ],
+                AnimatedOpacity(
+                  opacity: widget.selected ? 1 : 0,
+                  duration: ClayTokens.smooth,
+                  curve: ClayTokens.out,
+                  child: Container(
+                    margin: const EdgeInsets.symmetric(vertical: 6),
+                    decoration: BoxDecoration(
+                      borderRadius: BorderRadius.circular(ClayTokens.rSm),
+                      color: tint,
+                      boxShadow: <BoxShadow>[
+                        BoxShadow(
+                          color: widget.selectedColor.withOpacity(0.45),
+                          blurRadius: 18,
+                          offset: const Offset(0, 6),
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
+                Column(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: <Widget>[
+                    Icon(widget.icon, size: 23, color: color),
+                    const SizedBox(height: 4),
+                    Text(
+                      widget.label,
+                      style: TextStyle(
+                        fontSize: 10.5,
+                        height: 1,
+                        fontWeight:
+                            widget.selected ? FontWeight.w800 : FontWeight.w600,
+                        color: color,
+                      ),
+                    ),
+                  ],
+                ),
+              ],
+            ),
           ),
         ),
       ),
@@ -203,43 +271,77 @@ class _BarAction extends StatelessWidget {
   }
 }
 
-class _Shutter extends StatelessWidget {
+/// Obturador: anel de porcelana + núcleo de matéria que amassa ao toque.
+class _Shutter extends StatefulWidget {
   const _Shutter({required this.recording, required this.onTap});
 
   final bool recording;
   final VoidCallback onTap;
 
   @override
+  State<_Shutter> createState() => _ShutterState();
+}
+
+class _ShutterState extends State<_Shutter> {
+  bool _pressed = false;
+
+  @override
   Widget build(BuildContext context) {
     return GestureDetector(
       key: const ValueKey('kame-shutter'),
-      onTap: onTap,
-      child: Container(
-        width: NotchedCameraBar.fabRadius * 2,
-        height: NotchedCameraBar.fabRadius * 2,
-        decoration: BoxDecoration(
-          shape: BoxShape.circle,
-          color: const Color(0xFFF7F8FA), // anel branco
-          boxShadow: [
-            BoxShadow(
-              color: const Color(0x667C4DFF),
-              blurRadius: 26,
-              offset: const Offset(0, 8),
+      onTapDown: (_) => setState(() => _pressed = true),
+      onTapUp: (_) => setState(() => _pressed = false),
+      onTapCancel: () => setState(() => _pressed = false),
+      onTap: widget.onTap,
+      child: AnimatedScale(
+        scale: _pressed ? 0.93 : 1,
+        duration: ClayTokens.fast,
+        curve: ClayTokens.spring,
+        child: Container(
+          width: NotchedCameraBar.fabRadius * 2,
+          height: NotchedCameraBar.fabRadius * 2,
+          decoration: const BoxDecoration(
+            shape: BoxShape.circle,
+            gradient: LinearGradient(
+              begin: Alignment.topLeft,
+              end: Alignment.bottomRight,
+              colors: <Color>[Color(0xFFFFFDFB), Color(0xFFE9DCCD)],
             ),
-          ],
-        ),
-        child: Center(
-          child: AnimatedContainer(
-            duration: const Duration(milliseconds: 220),
-            curve: Curves.easeOutCubic,
-            width: recording ? 30 : 64,
-            height: recording ? 30 : 64,
-            decoration: BoxDecoration(
-              borderRadius: BorderRadius.circular(recording ? 9 : 40),
-              gradient: const LinearGradient(
-                begin: Alignment.topLeft,
-                end: Alignment.bottomRight,
-                colors: [Color(0xFFFF5A6B), Color(0xFFE11D3C)],
+            boxShadow: <BoxShadow>[
+              BoxShadow(
+                color: Color(0x66FF7A45),
+                blurRadius: 30,
+                offset: Offset(0, 10),
+              ),
+              BoxShadow(
+                color: Color(0x33000000),
+                blurRadius: 10,
+                offset: Offset(0, 3),
+              ),
+            ],
+          ),
+          child: Center(
+            // Único AnimatedContainer da barra: o núcleo do obturador
+            // (círculo em repouso, quadrado de "stop" gravando).
+            child: AnimatedContainer(
+              duration: const Duration(milliseconds: 220),
+              curve: Curves.easeOutCubic,
+              width: widget.recording ? 30 : 64,
+              height: widget.recording ? 30 : 64,
+              decoration: BoxDecoration(
+                borderRadius: BorderRadius.circular(widget.recording ? 9 : 40),
+                gradient: const LinearGradient(
+                  begin: Alignment.topLeft,
+                  end: Alignment.bottomRight,
+                  colors: <Color>[Color(0xFFFF7A86), Color(0xFFD7263D)],
+                ),
+                boxShadow: <BoxShadow>[
+                  BoxShadow(
+                    color: const Color(0x59D7263D),
+                    blurRadius: widget.recording ? 10 : 18,
+                    offset: const Offset(0, 6),
+                  ),
+                ],
               ),
             ),
           ),
