@@ -302,12 +302,12 @@ class _ShutterState extends State<_Shutter> {
           height: NotchedCameraBar.fabRadius * 2,
           decoration: const BoxDecoration(
             shape: BoxShape.circle,
-            gradient: const LinearGradient(
+            gradient: LinearGradient(
               begin: Alignment.topLeft,
               end: Alignment.bottomRight,
               colors: <Color>[Color(0xFFFFFDFB), Color(0xFFE9DCCD)],
             ),
-            boxShadow: const <BoxShadow>[
+            boxShadow: <BoxShadow>[
               BoxShadow(
                 color: Color(0x66FF7A45),
                 blurRadius: 30,

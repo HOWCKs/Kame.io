@@ -68,7 +68,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
         const SizedBox(height: KameTokens.gap),
         const _ClayCard(
           child: Column(
-            children: const [
+            children: [
               ListTile(
                 leading: Icon(Icons.info_outline_rounded),
                 title: Text('Kame.io'),

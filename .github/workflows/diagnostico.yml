@@ -68,7 +68,9 @@ jobs:
             echo "<details><summary>flutter test</summary>"
             echo
             echo '```'
-            tail -60 test.txt
+            head -30 test.txt
+            echo '...'
+            grep -m 1 -A 22 'EXCEPTION CAUGHT' test.txt
             echo '```'
             echo "</details>"
           } > body.md
