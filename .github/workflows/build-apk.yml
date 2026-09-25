@@ -105,8 +105,17 @@ jobs:
 
       - name: Renomear APK
         run: |
-          SRC="build/app/outputs/flutter-apk/app-${{ matrix.type }}.apk"
-          test -f "$SRC" || { echo "::error::APK não encontrado em $SRC"; exit 1; }
+          set -e
+          # o caminho de saída varia conforme a versão do AGP/Flutter: procuramos
+          # o APK em vez de assumir um caminho fixo
+          SRC=$(find . -type f -name "app-${{ matrix.type }}.apk" -print 2>/dev/null | head -n 1)
+          if [ -z "$SRC" ]; then
+            echo "::error::APK app-${{ matrix.type }}.apk não encontrado após o build"
+            find . -type f -name '*.apk' | head -n 20
+            ls -R build/app/outputs 2>/dev/null | head -n 40
+            exit 1
+          fi
+          echo "APK encontrado em $SRC"
           VERSION=$(grep '^version:' pubspec.yaml | awk '{print $2}' | cut -d+ -f1)
           DEST="build/app/outputs/flutter-apk/kame-io-${VERSION}-${{ matrix.type }}.apk"
           mv "$SRC" "$DEST"

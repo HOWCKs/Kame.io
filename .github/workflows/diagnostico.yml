@@ -61,6 +61,15 @@ jobs:
           mkdir -p ../out
           ./gradlew assembleDebug --no-daemon --stacktrace > ../out/gradle.txt 2>&1
           echo "EXIT_GRADLE=$?" >> ../out/gradle.txt
+          {
+            echo
+            echo "=== APKs encontrados ==="
+            find "$GITHUB_WORKSPACE" -type f -name '*.apk' | head -n 20
+            echo "=== outputs ==="
+            ls -R "$GITHUB_WORKSPACE/build/app/outputs" 2>/dev/null | head -n 40
+            echo "=== android/build outputs ==="
+            ls -R "$GITHUB_WORKSPACE/android/build/app/outputs" 2>/dev/null | head -n 40
+          } >> ../out/gradle.txt
 
       - name: Publicar relatórios no branch ci-reports
         if: always()
