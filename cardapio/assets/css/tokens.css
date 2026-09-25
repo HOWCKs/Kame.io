@@ -1,0 +1,156 @@
+/* ═══════════════════════════════════════════════════════════════════════
+   MORPHIS · ClayMorphist Design Tokens
+   Uma única fonte de verdade para cor, matéria, ritmo e movimento.
+   Todo componente consome tokens — nenhum valor mágico no CSS de tela.
+   ═══════════════════════════════════════════════════════════════════════ */
+
+:root {
+  /* ── superfície ───────────────────────────────────────────────────── */
+  --paper:        #F7F1EA;
+  --paper-2:      #FFFAF4;
+  --paper-3:      #EFE5DA;
+  --ink:          #1E1712;
+  --ink-2:        #4B3F36;
+  --muted:        #7C6E64;
+  --line:         rgba(30, 23, 18, 0.10);
+  --line-strong:  rgba(30, 23, 18, 0.18);
+
+  /* ── vidro ─────────────────────────────────────────────────────────── */
+  --glass:        rgba(255, 255, 255, 0.62);
+  --glass-soft:   rgba(255, 255, 255, 0.42);
+  --glass-line:   rgba(255, 255, 255, 0.75);
+  --glass-blur:   22px;
+  --glass-sat:    165%;
+
+  /* ── matéria (paleta de argila) ────────────────────────────────────── */
+  --clay:         #FF6A3D;   /* terracota · ação principal */
+  --clay-deep:    #C43C1B;   /* borda inferior da extrusão */
+  --sun:          #FFC24B;   /* âmbar · destaque quente */
+  --violet:       #7A63FF;   /* violeta · profundidade */
+  --mint:         #23C79B;   /* menta · sucesso */
+  --berry:        #FF6FA5;   /* framboesa · sobremesa */
+  --sky:          #49BDF6;   /* céu · bebidas */
+
+  /* ── estados ───────────────────────────────────────────────────────── */
+  --ok:           #17A97B;
+  --warn:         #E08A1E;
+  --danger:       #D9453C;
+  --focus:        #3C2BE0;
+
+  /* ── tipografia ────────────────────────────────────────────────────── */
+  --font-display: "Fraunces", "Iowan Old Style", "Palatino Linotype", Georgia, serif;
+  --font-ui:      "Plus Jakarta Sans", ui-sans-serif, system-ui, -apple-system,
+                  "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+  --font-mono:    ui-monospace, "SF Mono", "JetBrains Mono", Menlo, monospace;
+
+  /* escala: 1.25 em telas grandes, encolhe no mobile via clamp */
+  --t-xs:   clamp(0.72rem, 0.70rem + 0.10vw, 0.78rem);
+  --t-sm:   clamp(0.82rem, 0.79rem + 0.14vw, 0.90rem);
+  --t-base: clamp(0.94rem, 0.90rem + 0.20vw, 1.03rem);
+  --t-md:   clamp(1.05rem, 1.00rem + 0.30vw, 1.20rem);
+  --t-lg:   clamp(1.25rem, 1.15rem + 0.55vw, 1.55rem);
+  --t-xl:   clamp(1.55rem, 1.35rem + 1.1vw,  2.10rem);
+  --t-2xl:  clamp(2.00rem, 1.60rem + 2.4vw,  3.20rem);
+  --t-3xl:  clamp(2.55rem, 1.80rem + 4.0vw,  4.40rem);
+
+  --lh-tight: 1.04;
+  --lh-snug:  1.22;
+  --lh-body:  1.62;
+  --tracking-tight: -0.022em;
+  --tracking-wide:  0.16em;
+
+  /* ── espaço & grid ─────────────────────────────────────────────────── */
+  --s-1: 4px;  --s-2: 8px;  --s-3: 12px; --s-4: 16px;
+  --s-5: 20px; --s-6: 24px; --s-7: 32px; --s-8: 40px;
+  --s-9: 56px; --s-10: 72px; --s-11: 96px; --s-12: 128px;
+  --shell: 1200px;
+  --shell-pad: clamp(16px, 4vw, 40px);
+
+  /* ── forma ─────────────────────────────────────────────────────────── */
+  --r-xs: 10px;
+  --r-sm: 14px;
+  --r:    22px;
+  --r-lg: 30px;
+  --r-xl: 40px;
+  --r-2xl: 54px;
+  --r-pill: 999px;
+  --border-hair: 1px;
+
+  /* ── matéria & luz ─────────────────────────────────────────────────── */
+  --clay-out:  0 26px 46px -22px rgba(96, 48, 24, 0.55),
+               0 10px 18px -12px rgba(96, 48, 24, 0.35);
+  --clay-out-sm: 0 14px 26px -14px rgba(96, 48, 24, 0.45),
+                 0 5px 10px -6px rgba(96, 48, 24, 0.28);
+  --clay-in-top:  inset 0 2px 0 rgba(255, 255, 255, 0.72);
+  --clay-in-deep: inset 0 -4px 10px rgba(120, 52, 22, 0.28);
+  --glass-out:  0 24px 60px -28px rgba(52, 32, 20, 0.42);
+  --glass-in:   inset 0 1px 0 rgba(255, 255, 255, 0.85),
+                inset 0 -1px 0 rgba(120, 80, 50, 0.06);
+  --ring: 0 0 0 3px color-mix(in srgb, var(--focus) 34%, transparent);
+  --hair: 1px solid var(--line);
+
+  /* ── movimento ─────────────────────────────────────────────────────── */
+  --e-out:   cubic-bezier(0.22, 1, 0.36, 1);        /* saída suave */
+  --e-in:    cubic-bezier(0.55, 0, 1, 0.45);        /* entrada */
+  --e-spring: cubic-bezier(0.34, 1.56, 0.64, 1);    /* leve overshoot */
+  --e-morph: cubic-bezier(0.65, 0, 0.35, 1);
+  --d-fast: 160ms;
+  --d:      280ms;
+  --d-slow: 520ms;
+  --d-morph: 900ms;
+
+  /* ── camadas ───────────────────────────────────────────────────────── */
+  --z-bg: 0; --z-content: 1; --z-bar: 40; --z-header: 50;
+  --z-drawer: 70; --z-sheet: 80; --z-toast: 90;
+}
+
+/* ═══ noite ══════════════════════════════════════════════════════════════
+   O mesmo sistema, invertido: a matéria continua quente, a luz muda de lado.
+   ═══════════════════════════════════════════════════════════════════════ */
+[data-theme="night"] {
+  --paper:       #100C14;
+  --paper-2:     #191320;
+  --paper-3:     #241B2C;
+  --ink:         #F6EFE9;
+  --ink-2:       #D8CCC2;
+  --muted:       #A4939F;
+  --line:        rgba(255, 255, 255, 0.11);
+  --line-strong: rgba(255, 255, 255, 0.20);
+
+  --glass:       rgba(255, 255, 255, 0.07);
+  --glass-soft:  rgba(255, 255, 255, 0.045);
+  --glass-line:  rgba(255, 255, 255, 0.14);
+  --glass-blur:  26px;
+  --glass-sat:   140%;
+
+  --clay:        #FF8355;
+  --clay-deep:   #8E2B12;
+  --sun:         #FFCE63;
+  --violet:      #9A87FF;
+  --mint:        #35DDB0;
+  --berry:       #FF87B6;
+  --sky:         #6FCCFA;
+
+  --ok:          #35DDB0;
+  --warn:        #F0A63C;
+  --danger:      #FF6B60;
+  --focus:       #A99BFF;
+
+  --clay-out:  0 30px 54px -24px rgba(0, 0, 0, 0.85),
+               0 12px 22px -14px rgba(0, 0, 0, 0.7);
+  --clay-out-sm: 0 16px 30px -16px rgba(0, 0, 0, 0.75),
+                 0 6px 12px -8px rgba(0, 0, 0, 0.6);
+  --clay-in-top:  inset 0 2px 0 rgba(255, 255, 255, 0.20);
+  --clay-in-deep: inset 0 -4px 12px rgba(0, 0, 0, 0.55);
+  --glass-out:  0 30px 70px -30px rgba(0, 0, 0, 0.9);
+  --glass-in:   inset 0 1px 0 rgba(255, 255, 255, 0.16),
+                inset 0 -1px 0 rgba(0, 0, 0, 0.30);
+}
+
+/* Redução de movimento: o sistema para de se mexer, nunca de funcionar. */
+@media (prefers-reduced-motion: reduce) {
+  :root {
+    --d-fast: 1ms; --d: 1ms; --d-slow: 1ms; --d-morph: 1ms;
+    --e-spring: linear; --e-out: linear;
+  }
+}

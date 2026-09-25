@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 
 import '../theme/kame_theme.dart';
+import '../widgets/clay.dart';
 
 /// Preferências do app. Valores em memória por enquanto — troque o
 /// armazenamento por `shared_preferences` quando precisar persistir.
@@ -36,7 +37,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
           style: TextStyle(fontWeight: FontWeight.w700),
         ),
         const SizedBox(height: KameTokens.gap),
-        _GlassCard(
+        _ClayCard(
           child: Column(
             children: [
               SwitchListTile(
@@ -65,7 +66,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
           ),
         ),
         const SizedBox(height: KameTokens.gap),
-        _GlassCard(
+        _ClayCard(
           child: Column(
             children: const [
               ListTile(
@@ -87,20 +88,19 @@ class _SettingsScreenState extends State<SettingsScreen> {
   }
 }
 
-class _GlassCard extends StatelessWidget {
-  const _GlassCard({required this.child});
+/// Cartão de matéria: a face clara em cima, a lateral escura embaixo.
+class _ClayCard extends StatelessWidget {
+  const _ClayCard({required this.child});
 
   final Widget child;
 
   @override
   Widget build(BuildContext context) {
-    return Container(
-      decoration: BoxDecoration(
-        color: KameTokens.glassFill,
-        borderRadius: BorderRadius.circular(KameTokens.radiusCard),
-        border: Border.all(color: KameTokens.glassStroke),
-      ),
-      clipBehavior: Clip.antiAlias,
+    return ClaySurface(
+      radius: ClayTokens.r,
+      depth: 7,
+      color: ClayTokens.nightSoft,
+      padding: const EdgeInsets.symmetric(vertical: 6),
       child: child,
     );
   }

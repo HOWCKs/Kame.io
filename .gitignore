@@ -28,3 +28,6 @@ android/captures/
 
 # OS
 .DS_Store
+
+# Web (cardápio)
+node_modules/

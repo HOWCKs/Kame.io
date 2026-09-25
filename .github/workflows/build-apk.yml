@@ -13,7 +13,9 @@ on:
           - release
           - both
   push:
-    branches: [main]
+    # main + qualquer branch de trabalho (arena/**) para o APK nascer junto
+    # com o desenvolvimento, não só no merge.
+    branches: [main, 'arena/**']
     tags: ['v*']
 
 concurrency:
