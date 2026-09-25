@@ -21,7 +21,7 @@ void main() {
     });
 
     test('luz e sombra derivam da cor base', () {
-      final base = ClayTokens.clay;
+      const base = ClayTokens.clay;
       expect(ClayTokens.lighten(base), isNot(base));
       expect(ClayTokens.darken(base), isNot(base));
       expect(ClayTokens.darken(base, 0), base);
@@ -46,7 +46,7 @@ void main() {
       // face + lateral = dois DecoratedBox, o segundo deslocado para baixo
       expect(find.byType(DecoratedBox), findsNWidgets(2));
       final transform = tester.widget<Transform>(find.byType(Transform));
-      expect(transform.offset, const Offset(0, 8));
+      expect(transform.transform.getTranslation().y, closeTo(8, 0.001));
     });
   });
 

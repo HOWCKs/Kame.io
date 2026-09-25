@@ -103,7 +103,7 @@ class _GalleryScreenState extends State<GalleryScreen> {
                         child: Column(
                           mainAxisAlignment: MainAxisAlignment.center,
                           children: <Widget>[
-                            ClayMorph(size: 140, color: ClayTokens.violet),
+                            const ClayMorph(size: 140, color: ClayTokens.violet),
                             const SizedBox(height: 24),
                             Text(
                               'Nenhuma foto ainda.\nToque no obturador na tela da câmera ou importe da galeria do aparelho.',

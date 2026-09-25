@@ -4,7 +4,6 @@ import 'package:camera/camera.dart';
 import 'package:flutter/material.dart';
 
 import '../theme/kame_theme.dart';
-import 'clay.dart';
 
 enum CaptureMode { foto, video }
 
@@ -301,20 +300,20 @@ class _ShutterState extends State<_Shutter> {
         child: Container(
           width: NotchedCameraBar.fabRadius * 2,
           height: NotchedCameraBar.fabRadius * 2,
-          decoration: BoxDecoration(
+          decoration: const BoxDecoration(
             shape: BoxShape.circle,
             gradient: const LinearGradient(
               begin: Alignment.topLeft,
               end: Alignment.bottomRight,
               colors: <Color>[Color(0xFFFFFDFB), Color(0xFFE9DCCD)],
             ),
-            boxShadow: <BoxShadow>[
+            boxShadow: const <BoxShadow>[
               BoxShadow(
-                color: const Color(0x66FF7A45),
+                color: Color(0x66FF7A45),
                 blurRadius: 30,
-                offset: const Offset(0, 10),
+                offset: Offset(0, 10),
               ),
-              const BoxShadow(
+              BoxShadow(
                 color: Color(0x33000000),
                 blurRadius: 10,
                 offset: Offset(0, 3),

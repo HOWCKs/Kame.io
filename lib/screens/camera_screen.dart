@@ -285,7 +285,7 @@ class _CameraScreenState extends State<CameraScreen>
       );
     }
     if (camera == null || !_ready || !camera.value.isInitialized) {
-      return _Message(
+      return const _Message(
         icon: Icons.photo_camera_outlined,
         text: 'Iniciando a câmera…',
         tint: ClayTokens.clay,
@@ -416,11 +416,11 @@ class _SettingsSheet extends StatelessWidget {
       ),
       child: Stack(
         children: <Widget>[
-          Positioned.fill(
+          const Positioned.fill(
             child: GlassPanel(
               radius: ClayTokens.rXl,
               padding: EdgeInsets.zero,
-              child: const SettingsScreen(embedded: true),
+              child: SettingsScreen(embedded: true),
             ),
           ),
           // alça de arraste

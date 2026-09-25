@@ -66,7 +66,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
           ),
         ),
         const SizedBox(height: KameTokens.gap),
-        _ClayCard(
+        const _ClayCard(
           child: Column(
             children: const [
               ListTile(
