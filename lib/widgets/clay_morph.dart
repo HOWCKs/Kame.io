@@ -45,10 +45,15 @@ class _ClayMorphState extends State<ClayMorph> with TickerProviderStateMixin {
 
   double _spin = 0;
   Offset _pull = Offset.zero;
+  bool _motionChecked = false;
 
+  /// O respeito a "reduzir movimento" depende de MediaQuery — e herdadas só
+  /// podem ser lidas depois do initState, sob risco de assert em debug.
   @override
-  void initState() {
-    super.initState();
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    if (_motionChecked) return;
+    _motionChecked = true;
     if (!MediaQuery.of(context).disableAnimations) _idle.repeat();
   }
 
