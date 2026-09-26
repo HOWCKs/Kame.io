@@ -339,68 +339,68 @@ class ClaySwitch extends StatelessWidget {
     final puck = height - 8;
 
     return TweenAnimationBuilder<double>(
-      tween: Tween<double>(begin: value ? 1 : 0, end: value ? 1 : 0),
-      duration: motion.d(ClayDurations.quick),
-      curve: motion.curve(ClayCurves.squish),
-      builder: (context, t, _) {
-        final travel = (width - puck - 8) * t;
-        return ClayPressable(
-          onTap: () {
-            ClayHaptics.tap(context);
-            onChanged(!value);
-          },
-          semanticLabel: semanticLabel,
-          toggled: value,
-          builder: (context, state) {
-            final press = state.press.clamp(-0.2, 1.0);
-            return Transform.scale(
-              scale: 1 - 0.03 * press,
-              child: SizedBox(
-                width: width,
-                height: height,
-                child: Stack(
-                  children: <Widget>[
-                    Positioned.fill(
-                      child: CustomPaint(
-                        painter: ClayGroovePainter(
-                          radius: height / 2,
-                          depth: 0.42,
+        tween: Tween<double>(begin: value ? 1 : 0, end: value ? 1 : 0),
+        duration: motion.d(ClayDurations.quick),
+        curve: motion.curve(ClayCurves.squish),
+        builder: (context, t, _) {
+          final travel = (width - puck - 8) * t;
+          return ClayPressable(
+            onTap: () {
+              ClayHaptics.tap(context);
+              onChanged(!value);
+            },
+            semanticLabel: semanticLabel,
+            toggled: value,
+            builder: (context, state) {
+              final press = state.press.clamp(-0.2, 1.0);
+              return Transform.scale(
+                scale: 1 - 0.03 * press,
+                child: SizedBox(
+                  width: width,
+                  height: height,
+                  child: Stack(
+                    children: <Widget>[
+                      Positioned.fill(
+                        child: CustomPaint(
+                          painter: ClayGroovePainter(
+                            radius: height / 2,
+                            depth: 0.42,
+                          ),
                         ),
                       ),
-                    ),
-                    Positioned(
-                      left: 4 + travel,
-                      top: 4,
-                      child: Transform.scale(
-                        scaleX: 1 + 0.12 * press,
-                        scaleY: 1 - 0.1 * press,
-                        child: CustomPaint(
-                          size: Size.square(puck),
-                          painter: ClaySurfacePainter(
-                            kind: ClayMaterialKind.porcelain,
-                            radius: puck / 2,
-                            press: press,
-                            hovered: state.hovered,
-                            focused: state.focused,
-                            enabled: true,
-                            elevation: ClayElevation.l1,
-                            body: LinearGradient.lerp(
-                              ClayPalette.porcelainBody,
-                              ClayPalette.kilnBody,
-                              t,
+                      Positioned(
+                        left: 4 + travel,
+                        top: 4,
+                        child: Transform.scale(
+                          scaleX: 1 + 0.12 * press,
+                          scaleY: 1 - 0.1 * press,
+                          child: CustomPaint(
+                            size: Size.square(puck),
+                            painter: ClaySurfacePainter(
+                              kind: ClayMaterialKind.porcelain,
+                              radius: puck / 2,
+                              press: press,
+                              hovered: state.hovered,
+                              focused: state.focused,
+                              enabled: true,
+                              elevation: ClayElevation.l1,
+                              body: LinearGradient.lerp(
+                                ClayPalette.porcelainBody,
+                                ClayPalette.kilnBody,
+                                t,
+                              ),
                             ),
                           ),
                         ),
                       ),
-                    ),
-                  ],
+                    ],
+                  ),
                 ),
-              ),
-            );
-          },
-        );
-      },
-    );
+              );
+            },
+          );
+        },
+      );
   }
 }
 
@@ -513,34 +513,44 @@ class _ClayShutterState extends State<ClayShutter>
             final size =
                 ui.lerpDouble(widget.diameter, widget.diameter * 0.56, t)!;
 
+            // A caixa de toque é do tamanho da peça; a onda e a brasa
+            // transbordam por OverflowBox e são IgnorePointer — sem isso, o
+            // retângulo invisível de 134 px engolia os toques nos botões
+            // vizinhos (Virar e Vídeo morriam nas bordas internas).
             return SizedBox(
-              width: widget.diameter * 2.4,
-              height: widget.diameter * 2.4,
-              child: Center(
+              width: widget.diameter,
+              height: widget.diameter,
+              child: OverflowBox(
+                maxWidth: widget.diameter * 2.4,
+                maxHeight: widget.diameter * 2.4,
                 child: Stack(
                   alignment: Alignment.center,
                   children: <Widget>[
                     // Onda de choque da captura.
                     if (wave > 0)
-                      CustomPaint(
-                        size: Size.square(widget.diameter * 2.4),
-                        painter: _WavePainter(
-                          progress: wave,
-                          radius: ui.lerpDouble(
-                            widget.diameter * 0.5,
-                            widget.diameter * 1.9,
-                            wave,
-                          )!,
-                          color: ClayPalette.kiln,
+                      IgnorePointer(
+                        child: CustomPaint(
+                          size: Size.square(widget.diameter * 2.4),
+                          painter: _WavePainter(
+                            progress: wave,
+                            radius: ui.lerpDouble(
+                              widget.diameter * 0.5,
+                              widget.diameter * 1.9,
+                              wave,
+                            )!,
+                            color: ClayPalette.kiln,
+                          ),
                         ),
                       ),
                     // Brasa — respira enquanto grava.
-                    CustomPaint(
-                      size: Size.square(widget.diameter * 1.9),
-                      painter: _HaloPainter(
-                        radius: size * 0.5 * (0.92 + 0.14 * breath),
-                        opacity: recording ? 0.18 + 0.22 * breath : 0.3,
-                        color: recording ? ClayPalette.ember : ClayPalette.kiln,
+                    IgnorePointer(
+                      child: CustomPaint(
+                        size: Size.square(widget.diameter * 1.9),
+                        painter: _HaloPainter(
+                          radius: size * 0.5 * (0.92 + 0.14 * breath),
+                          opacity: recording ? 0.18 + 0.22 * breath : 0.3,
+                          color: recording ? ClayPalette.ember : ClayPalette.kiln,
+                        ),
                       ),
                     ),
                     ClaySurface(
