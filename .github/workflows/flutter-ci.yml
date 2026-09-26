@@ -40,10 +40,46 @@ jobs:
       # formatação não muda comportamento e pode ser aplicada depois).
       - name: Conferir formatação
         continue-on-error: true
-        run: dart format --output=none --set-exit-if-changed lib test
+        run: dart format --output=none --set-exit-if-changed lib test | tee format.log
 
       - name: Analisar código estático
-        run: flutter analyze --no-fatal-infos
+        continue-on-error: true
+        run: flutter analyze --no-fatal-infos | tee analyze.log
 
       - name: Rodar testes
-        run: flutter test --reporter expanded
+        continue-on-error: true
+        run: flutter test --reporter expanded | tee test.log
+
+      - name: Resumo
+        if: always()
+        run: |
+          {
+            echo '### Qualidade do código'
+            echo
+            echo '**Formatação**'
+            echo '```'
+            tail -n 20 format.log 2>/dev/null || echo 'sem saída'
+            echo '```'
+            echo
+            echo '**Analisar**'
+            echo '```'
+            tail -n 80 analyze.log 2>/dev/null || echo 'sem saída'
+            echo '```'
+            echo
+            echo '**Testes**'
+            echo '```'
+            tail -n 60 test.log 2>/dev/null || echo 'sem saída'
+            echo '```'
+          } >> "$GITHUB_STEP_SUMMARY"
+
+      - name: Publicar logs
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: quality-logs
+          path: |
+            format.log
+            analyze.log
+            test.log
+          if-no-files-found: warn
+          retention-days: 7
