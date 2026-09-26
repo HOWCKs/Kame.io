@@ -176,10 +176,35 @@ jobs:
           java -version 2>&1 | head -n 1
           cat android/gradle.properties
 
+      # Mesmo comando do workflow de build (gradle dentro de android/), para o
+      # teste reproduzir exatamente o caminho de saída do APK de produção.
       - name: Compilar APK de debug
         id: build
         continue-on-error: true
-        run: flutter build apk --debug 2>&1 | tee apk.log
+        run: |
+          cd android
+          ./gradlew assembleDebug --no-daemon 2>&1 | tee ../apk.log
+
+      - name: Renomear APK
+        continue-on-error: true
+        run: |
+          {
+            echo
+            echo '--- localizar e renomear ---'
+            SRC="$(find android/app/build/outputs/apk -type f -name '*.apk' ! -name '*unsigned*' 2>/dev/null | head -n 1 || true)"
+            echo "SRC=$SRC"
+            if [ -n "$SRC" ]; then
+              VERSION="$(grep '^version:' pubspec.yaml | awk '{print $2}' | cut -d+ -f1)"
+              mkdir -p build/app/outputs/flutter-apk
+              DEST="build/app/outputs/flutter-apk/kame-io-${VERSION}-debug.apk"
+              mv "$SRC" "$DEST"
+              echo "DEST=$DEST"
+              ls -lh "$DEST"
+            else
+              echo 'APK NAO ENCONTRADO'
+              find . -maxdepth 7 -name '*.apk' 2>/dev/null | head -n 10
+            fi
+          } 2>&1 | tee -a apk.log
 
       - name: Comentar o resultado no PR
         if: always()
@@ -211,6 +236,6 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: kame-io-debug-apk-ci
-          path: build/app/outputs/flutter-apk/app-debug.apk
+          path: build/app/outputs/flutter-apk/*.apk
           if-no-files-found: warn
           retention-days: 7

@@ -103,9 +103,22 @@ jobs:
 
       - name: Renomear APK
         run: |
-          SRC="build/app/outputs/flutter-apk/app-${{ matrix.type }}.apk"
-          test -f "$SRC" || { echo "::error::APK não encontrado em $SRC"; exit 1; }
-          VERSION=$(grep '^version:' pubspec.yaml | awk '{print $2}' | cut -d+ -f1)
+          set -euo pipefail
+          # O Gradle roda dentro de android/ (e não via `flutter build`), então o
+          # APK sai em android/app/build/outputs/apk/<variant>/. A busca aceita
+          # também o caminho do `flutter build`, para o passo não quebrar se o
+          # comando de build mudar no futuro.
+          SRC="$(find android/app/build/outputs/apk -type f -name '*.apk' ! -name '*unsigned*' 2>/dev/null | head -n 1 || true)"
+          if [ -z "$SRC" ]; then
+            SRC="$(find build -type f -name '*.apk' 2>/dev/null | head -n 1 || true)"
+          fi
+          if [ -z "$SRC" ]; then
+            echo "::error::nenhum APK encontrado depois do build"
+            find . -maxdepth 7 -name '*.apk' 2>/dev/null | head -n 20 || true
+            exit 1
+          fi
+          VERSION="$(grep '^version:' pubspec.yaml | awk '{print $2}' | cut -d+ -f1)"
+          mkdir -p build/app/outputs/flutter-apk
           DEST="build/app/outputs/flutter-apk/kame-io-${VERSION}-${{ matrix.type }}.apk"
           mv "$SRC" "$DEST"
           echo "APK_PATH=$DEST" >> "$GITHUB_ENV"
