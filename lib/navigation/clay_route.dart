@@ -13,7 +13,8 @@ class ClayPageRoute<T> extends PageRouteBuilder<T> {
   }) : super(
           settings: settings,
           transitionDuration: motion.d(const Duration(milliseconds: 420)),
-          reverseTransitionDuration: motion.d(const Duration(milliseconds: 320)),
+          reverseTransitionDuration:
+              motion.d(const Duration(milliseconds: 320)),
           pageBuilder: (context, animation, secondary) => builder(context),
           transitionsBuilder: (context, animation, secondary, child) {
             final curved = CurvedAnimation(

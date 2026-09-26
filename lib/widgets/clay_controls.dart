@@ -67,8 +67,9 @@ class ClayIconButton extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final idle =
-        kind == ClayMaterialKind.porcelain ? ClayPalette.inkSoft : ClayPalette.ash;
+    final idle = kind == ClayMaterialKind.porcelain
+        ? ClayPalette.inkSoft
+        : ClayPalette.ash;
     final active = tone ?? ClayPalette.kiln;
     final color = !enabled
         ? idle.withOpacity(0.45)
@@ -275,7 +276,8 @@ class ClayVein extends StatelessWidget {
                               children: <Widget>[
                                 ClayGlyphSwap(
                                   glyph: segment.glyph,
-                                  identity: Object.hash(segment.label, isSelected),
+                                  identity:
+                                      Object.hash(segment.label, isSelected),
                                   size: 21,
                                   color: isSelected
                                       ? ClayPalette.kilnDark
@@ -495,11 +497,13 @@ class _ClayShutterState extends State<ClayShutter>
         final recording = widget.recording;
 
         return TweenAnimationBuilder<double>(
-          tween: Tween<double>(begin: recording ? 1.0 : 0.0, end: recording ? 1.0 : 0.0),
+          tween: Tween<double>(
+              begin: recording ? 1.0 : 0.0, end: recording ? 1.0 : 0.0),
           duration: motion.d(ClayDurations.morph),
           curve: motion.curve(ClayCurves.squish),
           builder: (context, t, _) {
-            final size = ui.lerpDouble(widget.diameter, widget.diameter * 0.56, t)!;
+            final size =
+                ui.lerpDouble(widget.diameter, widget.diameter * 0.56, t)!;
 
             return SizedBox(
               width: widget.diameter * 2.4,
@@ -540,9 +544,8 @@ class _ClayShutterState extends State<ClayShutter>
                       elevation: ClayElevation.l3,
                       enabled: widget.ready,
                       glow: widget.ready ? ClayPalette.kiln : null,
-                      semanticLabel: recording
-                          ? 'Parar gravação'
-                          : 'Obturador, capturar',
+                      semanticLabel:
+                          recording ? 'Parar gravação' : 'Obturador, capturar',
                       onTap: widget.onTap,
                       child: AnimatedOpacity(
                         opacity: recording ? 0 : 1,

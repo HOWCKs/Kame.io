@@ -119,7 +119,9 @@ class _AtlasScreenState extends State<AtlasScreen> {
     final confirmed = await showDialog<bool>(
       context: context,
       builder: (context) => ClayConfirmDialog(
-        title: items.length == 1 ? 'Excluir esta forma?' : 'Excluir ${items.length} formas?',
+        title: items.length == 1
+            ? 'Excluir esta forma?'
+            : 'Excluir ${items.length} formas?',
         message:
             'As peças saem do Atlas e do aparelho. Não dá para desfazer depois.',
         confirmLabel: 'Excluir',

@@ -144,28 +144,44 @@ class ClayType {
   }
 
   /// 34/40 — uma ideia por tela.
-  static TextStyle display({Color color = ClayPalette.chalk}) =>
-      _style(size: 34, height: 40, tracking: -0.7, weight: FontWeight.w700, color: color);
+  static TextStyle display({Color color = ClayPalette.chalk}) => _style(
+      size: 34,
+      height: 40,
+      tracking: -0.7,
+      weight: FontWeight.w700,
+      color: color);
 
   /// 24/30 — títulos de tela.
-  static TextStyle title({Color color = ClayPalette.chalk}) =>
-      _style(size: 24, height: 30, tracking: -0.4, weight: FontWeight.w600, color: color);
+  static TextStyle title({Color color = ClayPalette.chalk}) => _style(
+      size: 24,
+      height: 30,
+      tracking: -0.4,
+      weight: FontWeight.w600,
+      color: color);
 
   /// 18/24 — títulos de seção.
-  static TextStyle section({Color color = ClayPalette.chalk}) =>
-      _style(size: 18, height: 24, tracking: -0.2, weight: FontWeight.w600, color: color);
+  static TextStyle section({Color color = ClayPalette.chalk}) => _style(
+      size: 18,
+      height: 24,
+      tracking: -0.2,
+      weight: FontWeight.w600,
+      color: color);
 
   /// 15/22 — leitura.
-  static TextStyle body({Color color = ClayPalette.chalk}) =>
-      _style(size: 15, height: 22, tracking: 0, weight: FontWeight.w400, color: color);
+  static TextStyle body({Color color = ClayPalette.chalk}) => _style(
+      size: 15, height: 22, tracking: 0, weight: FontWeight.w400, color: color);
 
   /// 14/20 — corpo denso e rótulos de lista.
-  static TextStyle bodySm({Color color = ClayPalette.chalk}) =>
-      _style(size: 14, height: 20, tracking: 0, weight: FontWeight.w400, color: color);
+  static TextStyle bodySm({Color color = ClayPalette.chalk}) => _style(
+      size: 14, height: 20, tracking: 0, weight: FontWeight.w400, color: color);
 
   /// 13/16 — rótulos de ação.
-  static TextStyle label({Color color = ClayPalette.chalk}) =>
-      _style(size: 13, height: 16, tracking: 0.1, weight: FontWeight.w600, color: color);
+  static TextStyle label({Color color = ClayPalette.chalk}) => _style(
+      size: 13,
+      height: 16,
+      tracking: 0.1,
+      weight: FontWeight.w600,
+      color: color);
 
   /// 11/14 — etiquetas, sempre em caixa alta pelo chamador.
   /// Em controles apertados (barra), use `size: 10`.
@@ -179,13 +195,22 @@ class ClayType {
       );
 
   /// Numéricos (timer, contadores) — largura fixa para não “dançar”.
-  static TextStyle numeric({Color color = ClayPalette.chalk, double size = 13}) =>
-      _style(size: size, height: size + 3, tracking: 0, weight: FontWeight.w600, color: color)
-          .copyWith(fontFeatures: const <FontFeature>[FontFeature.tabularFigures()]);
+  static TextStyle numeric(
+          {Color color = ClayPalette.chalk, double size = 13}) =>
+      _style(
+              size: size,
+              height: size + 3,
+              tracking: 0,
+              weight: FontWeight.w600,
+              color: color)
+          .copyWith(
+              fontFeatures: const <FontFeature>[FontFeature.tabularFigures()]);
 
   static TextTheme textTheme({Brightness brightness = Brightness.dark}) {
-    final text = brightness == Brightness.dark ? ClayPalette.chalk : ClayPalette.ink;
-    final soft = brightness == Brightness.dark ? ClayPalette.ash : ClayPalette.inkSoft;
+    final text =
+        brightness == Brightness.dark ? ClayPalette.chalk : ClayPalette.ink;
+    final soft =
+        brightness == Brightness.dark ? ClayPalette.ash : ClayPalette.inkSoft;
     return TextTheme(
       displayLarge: display(color: text),
       displayMedium: title(color: text),
@@ -216,7 +241,8 @@ class ClayElevation {
   });
 
   /// Nível 0 — raso: só o rim de luz.
-  static const ClayElevation flat = ClayElevation(spread: 0, offsetY: 0, opacity: 0, lift: 0);
+  static const ClayElevation flat =
+      ClayElevation(spread: 0, offsetY: 0, opacity: 0, lift: 0);
 
   /// Nível 1 — apoiado.
   static const ClayElevation l1 =

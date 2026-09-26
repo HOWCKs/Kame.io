@@ -89,7 +89,8 @@ class SettingsScreen extends StatelessWidget {
                           control: ClaySwitch(
                             value: settings.haptics,
                             semanticLabel: 'Vibração',
-                            onChanged: (value) => settings.set('haptics', value),
+                            onChanged: (value) =>
+                                settings.set('haptics', value),
                           ),
                         ),
                         _Divider(),
@@ -345,6 +346,7 @@ class _Row extends StatelessWidget {
 class _Divider extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
-    return const Divider(height: 1, indent: ClaySpace.sm, endIndent: ClaySpace.sm);
+    return const Divider(
+        height: 1, indent: ClaySpace.sm, endIndent: ClaySpace.sm);
   }
 }

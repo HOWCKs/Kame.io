@@ -121,7 +121,8 @@ class _StudioScreenState extends State<StudioScreen>
     await _open(_cameras[_lens]);
   }
 
-  Future<void> _open(CameraDescription description, {bool audio = false}) async {
+  Future<void> _open(CameraDescription description,
+      {bool audio = false}) async {
     final previous = _controller;
     final controller = CameraController(
       description,
@@ -219,7 +220,8 @@ class _StudioScreenState extends State<StudioScreen>
         await _open(_cameras[_lens], audio: true);
       } else {
         _toastNow(
-          message: 'Gravando sem áudio. Libere o microfone nos ajustes do sistema.',
+          message:
+              'Gravando sem áudio. Libere o microfone nos ajustes do sistema.',
           glyph: ClayGlyphs.wave(),
         );
       }
@@ -416,7 +418,8 @@ class _StudioScreenState extends State<StudioScreen>
       ClayPageRoute<void>(
         settings: const RouteSettings(name: '/atlas'),
         motion: ClayMotionScope.of(context),
-        builder: (_) => AtlasScreen(settings: widget.settings, vault: widget.vault),
+        builder: (_) =>
+            AtlasScreen(settings: widget.settings, vault: widget.vault),
       ),
     );
   }
@@ -426,7 +429,8 @@ class _StudioScreenState extends State<StudioScreen>
       ClayPageRoute<void>(
         settings: const RouteSettings(name: '/settings'),
         motion: ClayMotionScope.of(context),
-        builder: (_) => SettingsScreen(settings: widget.settings, vault: widget.vault),
+        builder: (_) =>
+            SettingsScreen(settings: widget.settings, vault: widget.vault),
       ),
     );
   }
@@ -782,8 +786,7 @@ class _SquircleStageClipper extends CustomClipper<Path> {
   final double radius;
 
   @override
-  Path getClip(Size size) =>
-      ClayShape.squircle(Offset.zero & size, radius);
+  Path getClip(Size size) => ClayShape.squircle(Offset.zero & size, radius);
 
   @override
   bool shouldReclip(covariant _SquircleStageClipper oldClipper) =>

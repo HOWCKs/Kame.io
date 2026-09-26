@@ -121,11 +121,13 @@ abstract final class ClayGlyphs {
   static List<ClayStroke> dial() {
     const c = Offset(12, 12);
     final scale = Path()
-      ..addArc(Rect.fromCircle(center: c, radius: 8.4), math.pi * 0.86, math.pi * 1.28);
+      ..addArc(Rect.fromCircle(center: c, radius: 8.4), math.pi * 0.86,
+          math.pi * 1.28);
     final knob = Path()..addOval(Rect.fromCircle(center: c, radius: 5.2));
     final pointer = Path()
       ..moveTo(12, 12)
-      ..lineTo(12 - 3.3 * math.cos(math.pi / 4), 12 - 3.3 * math.sin(math.pi / 4));
+      ..lineTo(
+          12 - 3.3 * math.cos(math.pi / 4), 12 - 3.3 * math.sin(math.pi / 4));
     final ticks = Path();
     for (final a in <double>[0.86, 1.18, 1.5, 1.82, 2.14]) {
       final t = math.pi * a;
@@ -312,7 +314,9 @@ abstract final class ClayGlyphs {
 
   /// **Tentar de novo** — ciclo.
   static List<ClayStroke> retry() {
-    return <ClayStroke>[_arcWithHead(const Offset(12, 12), 8.4, math.pi * 0.28, math.pi * 1.5)];
+    return <ClayStroke>[
+      _arcWithHead(const Offset(12, 12), 8.4, math.pi * 0.28, math.pi * 1.5)
+    ];
   }
 
   /// **Mover / arrastar** — usado nas dicas de gesto.
@@ -341,7 +345,10 @@ abstract final class ClayGlyphs {
     final crease = Path()
       ..moveTo(7.8, 10.1)
       ..cubicTo(10.6, 7.9, 14.6, 9.4, 15.8, 12.4);
-    return <ClayStroke>[ClayStroke(blob, width: 1.7), ClayStroke(crease, width: 1.5)];
+    return <ClayStroke>[
+      ClayStroke(blob, width: 1.7),
+      ClayStroke(crease, width: 1.5)
+    ];
   }
 
   /// **Velocidade do movimento** — `lines` marcas de deslocamento.
@@ -379,9 +386,11 @@ abstract final class ClayGlyphs {
     double sweep, {
     double head = 3.6,
   }) {
-    final p = Path()..addArc(Rect.fromCircle(center: c, radius: r), start, sweep);
+    final p = Path()
+      ..addArc(Rect.fromCircle(center: c, radius: r), start, sweep);
     final endAngle = start + sweep;
-    final end = Offset(c.dx + r * math.cos(endAngle), c.dy + r * math.sin(endAngle));
+    final end =
+        Offset(c.dx + r * math.cos(endAngle), c.dy + r * math.sin(endAngle));
     // Derivada de (cos, sin) em coordenadas de tela (y cresce para baixo).
     final tangent = math.atan2(math.cos(endAngle), -math.sin(endAngle));
     for (final side in <double>[-1, 1]) {
@@ -400,7 +409,8 @@ abstract final class ClayGlyphs {
 /// a identidade do caminho mudou. Aqui a identidade é estável por chave, e o
 /// glifo só é redesenhado quando o estado que o define muda de verdade.
 abstract final class ClayGlyphCache {
-  static final Map<String, List<ClayStroke>> _cache = <String, List<ClayStroke>>{};
+  static final Map<String, List<ClayStroke>> _cache =
+      <String, List<ClayStroke>>{};
 
   static List<ClayStroke> of(String key, List<ClayStroke> Function() build) =>
       _cache.putIfAbsent(key, build);

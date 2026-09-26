@@ -74,7 +74,8 @@ class MorphVault extends ChangeNotifier {
       if (settings.persist) {
         final dir = await _vaultDir();
         final entities = dir.listSync().whereType<File>().toList()
-          ..sort((a, b) => b.lastModifiedSync().compareTo(a.lastModifiedSync()));
+          ..sort(
+              (a, b) => b.lastModifiedSync().compareTo(a.lastModifiedSync()));
         for (final file in entities) {
           if (_isMedia(file.path)) {
             _items.add(

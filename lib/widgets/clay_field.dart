@@ -126,7 +126,8 @@ class _ClayFieldState extends State<ClayField>
 
   void _end() {
     if (!widget.interactive) return;
-    _grab.animateTo(0, duration: ClayDurations.morph, curve: ClayCurves.softOut);
+    _grab.animateTo(0,
+        duration: ClayDurations.morph, curve: ClayCurves.softOut);
   }
 
   List<ClaySample> _samples(Size size) {
@@ -140,9 +141,11 @@ class _ClayFieldState extends State<ClayField>
       // Frequência 1: o laço fecha exatamente, sem salto perceptível.
       final phase = seed[3];
       final dx = math.sin(2 * math.pi * (t + phase)) * 0.022 * size.width;
-      final dy = math.cos(2 * math.pi * (t + phase * 1.7)) * 0.026 * size.height;
+      final dy =
+          math.cos(2 * math.pi * (t + phase * 1.7)) * 0.026 * size.height;
 
-      var center = Offset(seed[0] * size.width + dx, seed[1] * size.height + dy);
+      var center =
+          Offset(seed[0] * size.width + dx, seed[1] * size.height + dy);
       final radius = seed[2] * min;
 
       // A matéria é puxada pelo dedo — quanto mais perto, mais estica.
@@ -152,7 +155,8 @@ class _ClayFieldState extends State<ClayField>
         final reach = radius * 3.4;
         if (dist < reach && dist > 0.001) {
           final falloff = 1 - (dist / reach);
-          center = center + to / dist * (radius * 0.55 * falloff * falloff * grab);
+          center =
+              center + to / dist * (radius * 0.55 * falloff * falloff * grab);
         }
       }
       samples.add(ClaySample(center, radius));
@@ -293,7 +297,9 @@ class ClayFieldPainter extends CustomPainter {
         var hi = lo;
         var guard = 0;
         while (hi < maxR &&
-            fieldAt(samples, Offset(s.center.dx + dx * hi, s.center.dy + dy * hi)) > 1) {
+            fieldAt(samples,
+                    Offset(s.center.dx + dx * hi, s.center.dy + dy * hi)) >
+                1) {
           lo = hi;
           hi += step;
           if (++guard > 72) break;
@@ -302,7 +308,8 @@ class ClayFieldPainter extends CustomPainter {
         // Bisseção: 6 iterações dão precisão sub-pixel em qualquer densidade.
         for (var k = 0; k < 6; k++) {
           final mid = (lo + hi) * 0.5;
-          if (fieldAt(samples, Offset(s.center.dx + dx * mid, s.center.dy + dy * mid)) >
+          if (fieldAt(samples,
+                  Offset(s.center.dx + dx * mid, s.center.dy + dy * mid)) >
               1) {
             lo = mid;
           } else {
@@ -313,9 +320,8 @@ class ClayFieldPainter extends CustomPainter {
       }
 
       final blob = _smoothClosedPath(points);
-      union = union == null
-          ? blob
-          : Path.combine(PathOperation.union, union, blob);
+      union =
+          union == null ? blob : Path.combine(PathOperation.union, union, blob);
     }
 
     return union ?? Path();
@@ -329,7 +335,8 @@ class ClayFieldPainter extends CustomPainter {
     final n = points.length;
     if (n < 3) return path;
 
-    Offset mid(Offset a, Offset b) => Offset((a.dx + b.dx) / 2, (a.dy + b.dy) / 2);
+    Offset mid(Offset a, Offset b) =>
+        Offset((a.dx + b.dx) / 2, (a.dy + b.dy) / 2);
 
     final start = mid(points[n - 1], points[0]);
     path.moveTo(start.dx, start.dy);

@@ -382,7 +382,8 @@ class ClaySurfacePainter extends CustomPainter {
         end: const Alignment(0, 0.42),
         colors: <Color>[
           Colors.white.withOpacity(
-            (0.62 * _skin.topLight + 0.3 * elevation.lift) * (enabled ? 1 : 0.4),
+            (0.62 * _skin.topLight + 0.3 * elevation.lift) *
+                (enabled ? 1 : 0.4),
           ),
           Colors.white.withOpacity(0),
         ],
@@ -595,8 +596,7 @@ class _SquircleClipper extends CustomClipper<Path> {
   final double radius;
 
   @override
-  Path getClip(Size size) =>
-      ClayShape.squircle(Offset.zero & size, radius);
+  Path getClip(Size size) => ClayShape.squircle(Offset.zero & size, radius);
 
   @override
   bool shouldReclip(covariant _SquircleClipper oldClipper) =>

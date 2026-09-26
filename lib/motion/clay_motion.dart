@@ -80,7 +80,8 @@ class ClayMotionData {
 ///  1. `MediaQuery.disableAnimations` — preferência do sistema;
 ///  2. o ajuste do app em `ClaySettingsController` (pode forçar reduzido
 ///     mesmo que o sistema não peça).
-class ClayMotionScope extends InheritedNotifier<ValueNotifier<ClayMotionConfig>> {
+class ClayMotionScope
+    extends InheritedNotifier<ValueNotifier<ClayMotionConfig>> {
   const ClayMotionScope({
     super.key,
     required ValueNotifier<ClayMotionConfig> config,
@@ -91,7 +92,8 @@ class ClayMotionScope extends InheritedNotifier<ValueNotifier<ClayMotionConfig>>
     final notifier =
         context.dependOnInheritedWidgetOfExactType<ClayMotionScope>()?.notifier;
     final config = notifier?.value ?? const ClayMotionConfig();
-    final systemReduced = MediaQuery.maybeOf(context)?.disableAnimations ?? false;
+    final systemReduced =
+        MediaQuery.maybeOf(context)?.disableAnimations ?? false;
     final reduced = config.motion == ClayMotionMode.reduced ||
         (config.motion == ClayMotionMode.system && systemReduced);
 
@@ -100,7 +102,8 @@ class ClayMotionScope extends InheritedNotifier<ValueNotifier<ClayMotionConfig>>
       flick: reduced ? const Duration(milliseconds: 60) : ClayDurations.flick,
       quick: reduced ? const Duration(milliseconds: 70) : ClayDurations.quick,
       morph: reduced ? const Duration(milliseconds: 90) : ClayDurations.morph,
-      sculpt: reduced ? const Duration(milliseconds: 120) : ClayDurations.sculpt,
+      sculpt:
+          reduced ? const Duration(milliseconds: 120) : ClayDurations.sculpt,
       haptics: config.haptics && !reduced,
     );
   }

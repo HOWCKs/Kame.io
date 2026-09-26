@@ -12,8 +12,8 @@ void main() {
   test('um bloco isolado tem contorno no raio exato do campo', () {
     const center = Offset(160, 110);
     const radius = 40.0;
-    final bounds = surfaceOf(<ClaySample>[const ClaySample(center, radius)])
-        .getBounds();
+    final bounds =
+        surfaceOf(<ClaySample>[const ClaySample(center, radius)]).getBounds();
 
     // Superfície de Σ r²/d² = 1 com um único bloco => d = r.
     expect(bounds.center.dx, closeTo(center.dx, 1.5));
@@ -53,7 +53,8 @@ void main() {
       const ClaySample(Offset(120, 90), 30),
       const ClaySample(Offset(190, 130), 26),
     ];
-    expect(surfaceOf(samples).getBounds(), equals(surfaceOf(samples).getBounds()));
+    expect(
+        surfaceOf(samples).getBounds(), equals(surfaceOf(samples).getBounds()));
   });
 
   test('a qualidade baixa ainda fecha a silhueta', () {

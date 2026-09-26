@@ -70,7 +70,8 @@ void main() {
   group('tema', () {
     testWidgets('Material 3 escuro com os tokens de argila', (tester) async {
       await tester.pumpWidget(
-        MaterialApp(theme: ClayTheme.dark(), home: const Scaffold(body: Text('ok'))),
+        MaterialApp(
+            theme: ClayTheme.dark(), home: const Scaffold(body: Text('ok'))),
       );
       await tester.pumpAndSettle();
 
@@ -120,7 +121,8 @@ void main() {
 
       expect(data.reduced, isTrue);
       expect(data.haptics, isFalse);
-      expect(data.d(const Duration(milliseconds: 400)).inMilliseconds, lessThan(400));
+      expect(data.d(const Duration(milliseconds: 400)).inMilliseconds,
+          lessThan(400));
       expect(data.curve(ClayCurves.squish), Curves.linear);
     });
   });
@@ -226,7 +228,8 @@ void main() {
                       semanticLabel: 'Modo de captura',
                       onChanged: (index) => setState(() => selected = index),
                       segments: <ClaySegment>[
-                        ClaySegment(label: 'Foto', glyph: ClayGlyphs.aperture()),
+                        ClaySegment(
+                            label: 'Foto', glyph: ClayGlyphs.aperture()),
                         ClaySegment(label: 'Vídeo', glyph: ClayGlyphs.reel()),
                       ],
                     );

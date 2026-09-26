@@ -278,7 +278,9 @@ class _ClayFocusRingState extends State<ClayFocusRing>
     return AnimatedBuilder(
       animation: _controller,
       builder: (context, _) {
-        final t = motion.reduced ? 1.0 : Curves.easeOutCubic.transform(_controller.value);
+        final t = motion.reduced
+            ? 1.0
+            : Curves.easeOutCubic.transform(_controller.value);
         final scale = 1.35 - 0.35 * t;
         return Positioned(
           left: widget.position.dx - 30,

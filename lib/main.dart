@@ -103,7 +103,8 @@ class _KameAppState extends State<KameApp> {
                 settings: route,
                 motion: motion,
                 builder: (_) => widget.settings.onboarded
-                    ? StudioScreen(settings: widget.settings, vault: widget.vault)
+                    ? StudioScreen(
+                        settings: widget.settings, vault: widget.vault)
                     : OnboardingScreen(
                         settings: widget.settings,
                         vault: widget.vault,

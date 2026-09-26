@@ -72,7 +72,13 @@ void main() {
       await tester.pumpWidget(wrap());
       await tester.pumpAndSettle();
 
-      for (final label in <String>['Foto', 'Vídeo', 'Virar', 'Flash', 'Ajustes']) {
+      for (final label in <String>[
+        'Foto',
+        'Vídeo',
+        'Virar',
+        'Flash',
+        'Ajustes'
+      ]) {
         expect(find.text(label), findsOneWidget, reason: label);
       }
     });
