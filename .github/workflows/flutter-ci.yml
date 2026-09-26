@@ -139,3 +139,78 @@ jobs:
             test.log
           if-no-files-found: warn
           retention-days: 7
+
+  # Compila o APK de debug e devolve o log no PR. Roda só quando a mensagem do
+  # commit contém "[apk]" — para não pagar 8 minutos de Gradle em todo push.
+  apk:
+    name: Compilar APK (debug)
+    if: contains(github.event.head_commit.message, '[apk]')
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    permissions:
+      contents: read
+      pull-requests: write
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Configurar Java 17
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+
+      - name: Configurar Flutter
+        uses: subosito/flutter-action@v2
+        with:
+          flutter-version: '3.24.5'
+          channel: stable
+          cache: true
+
+      - name: Instalar dependências
+        run: flutter pub get
+
+      - name: Versões do toolchain
+        run: |
+          flutter --version
+          java -version 2>&1 | head -n 1
+          cat android/gradle.properties
+
+      - name: Compilar APK de debug
+        id: build
+        continue-on-error: true
+        run: flutter build apk --debug 2>&1 | tee apk.log
+
+      - name: Comentar o resultado no PR
+        if: always()
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          PR=$(gh pr list --head "${GITHUB_REF_NAME}" --state open --json number --jq '.[0].number' || true)
+          {
+            echo "## Build do APK — \`${GITHUB_SHA:0:8}\`"
+            echo
+            echo '```'
+            tail -n 200 apk.log 2>/dev/null || echo '(sem log)'
+            echo '```'
+            echo
+            if [ -f build/app/outputs/flutter-apk/app-debug.apk ]; then
+              echo "✅ APK gerado."
+            else
+              echo "❌ Falhou."
+            fi
+          } > body.md
+          if [ -n "$PR" ]; then
+            gh pr comment "$PR" --body-file body.md
+          else
+            cat body.md
+          fi
+
+      - name: Publicar APK
+        if: success()
+        uses: actions/upload-artifact@v4
+        with:
+          name: kame-io-debug-apk-ci
+          path: build/app/outputs/flutter-apk/app-debug.apk
+          if-no-files-found: warn
+          retention-days: 7

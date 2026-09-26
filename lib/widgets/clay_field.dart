@@ -63,7 +63,8 @@ class ClayField extends StatefulWidget {
   State<ClayField> createState() => _ClayFieldState();
 }
 
-class _ClayFieldState extends State<ClayField> with TickerProviderStateMixin {
+class _ClayFieldState extends State<ClayField>
+    with TickerProviderStateMixin {
   late final AnimationController _drift = AnimationController(
     vsync: this,
     duration: const Duration(seconds: 9),
