@@ -449,11 +449,20 @@ class _ClayShutterState extends State<ClayShutter>
   late final Listenable _ticks = Listenable.merge(<Listenable>[_wave, _breath]);
 
   int _seenPulse = 0;
+  bool _breathing = false;
 
   @override
   void initState() {
     super.initState();
     _seenPulse = widget.pulse;
+    _breath.value = 0.35;
+  }
+
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    // Preferência de movimento vem de um InheritedWidget: só pode ser lida
+    // depois do initState, e precisa ser relida quando ela mudar.
     _syncBreath();
   }
 
@@ -469,7 +478,10 @@ class _ClayShutterState extends State<ClayShutter>
 
   void _syncBreath() {
     final reduced = ClayMotionScope.of(context).reduced;
-    if (widget.recording && !reduced) {
+    final shouldBreathe = widget.recording && !reduced;
+    if (shouldBreathe == _breathing) return;
+    _breathing = shouldBreathe;
+    if (shouldBreathe) {
       _breath.repeat(reverse: true);
     } else {
       _breath

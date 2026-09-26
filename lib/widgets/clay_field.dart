@@ -80,9 +80,19 @@ class _ClayFieldState extends State<ClayField>
   Offset? _pointer;
   bool _touched = false;
 
+  /// A massa só começa a respirar depois do primeiro frame em que a
+  /// preferência de movimento já é conhecida.
+  bool _drifting = false;
+
   @override
   void initState() {
     super.initState();
+    _drift.value = 0.22;
+  }
+
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
     _syncDrift();
   }
 
@@ -94,7 +104,10 @@ class _ClayFieldState extends State<ClayField>
 
   void _syncDrift() {
     final reduced = ClayMotionScope.of(context).reduced;
-    if (widget.drift && !reduced) {
+    final shouldDrift = widget.drift && !reduced;
+    if (shouldDrift == _drifting) return;
+    _drifting = shouldDrift;
+    if (shouldDrift) {
       _drift.repeat();
     } else {
       _drift
