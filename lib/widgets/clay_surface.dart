@@ -99,6 +99,7 @@ class ClayPressable extends StatefulWidget {
     this.enabled = true,
     this.semanticLabel,
     this.tooltip,
+    this.toggled,
     this.autofocus = false,
     this.enableHover = true,
   });
@@ -109,6 +110,10 @@ class ClayPressable extends StatefulWidget {
   final bool enabled;
   final String? semanticLabel;
   final String? tooltip;
+
+  /// Só para controles do tipo chave: faz o leitor de tela dizer “ligado /
+  /// desligado” em vez de só “botão”.
+  final bool? toggled;
   final bool autofocus;
   final bool enableHover;
 
@@ -489,6 +494,7 @@ class ClaySurface extends StatelessWidget {
     this.alignment,
     this.specular = true,
     this.body,
+    this.toggled,
   });
 
   final Widget child;
@@ -507,6 +513,7 @@ class ClaySurface extends StatelessWidget {
   final bool pressable;
   final String? semanticLabel;
   final String? tooltip;
+  final bool? toggled;
   final AlignmentGeometry? alignment;
   final bool specular;
   final Gradient? body;
@@ -552,6 +559,7 @@ class ClaySurface extends StatelessWidget {
             onTap: onTap,
             onLongPress: onLongPress,
             semanticLabel: semanticLabel,
+            toggled: toggled,
             tooltip: tooltip,
             builder: (context, state) => surfaceBody(
               press: state.press,

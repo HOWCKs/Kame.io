@@ -338,11 +338,7 @@ class ClaySwitch extends StatelessWidget {
     final width = height * _widthFactor;
     final puck = height - 8;
 
-    return Semantics(
-      label: semanticLabel,
-      toggled: value,
-      enabled: true,
-      child: TweenAnimationBuilder<double>(
+    return TweenAnimationBuilder<double>(
         tween: Tween<double>(begin: value ? 1 : 0, end: value ? 1 : 0),
         duration: motion.d(ClayDurations.quick),
         curve: motion.curve(ClayCurves.squish),
@@ -354,6 +350,7 @@ class ClaySwitch extends StatelessWidget {
               onChanged(!value);
             },
             semanticLabel: semanticLabel,
+            toggled: value,
             builder: (context, state) {
               final press = state.press.clamp(-0.2, 1.0);
               return Transform.scale(
@@ -403,8 +400,7 @@ class ClaySwitch extends StatelessWidget {
             },
           );
         },
-      ),
-    );
+      );
   }
 }
 
