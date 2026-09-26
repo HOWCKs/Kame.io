@@ -1,0 +1,216 @@
+name: Flutter CI
+
+on:
+  pull_request:
+    branches: [main]
+  push:
+    branches-ignore: [main]
+  workflow_dispatch:
+
+concurrency:
+  group: flutter-ci-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  quality:
+    name: Analisar e testar
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Configurar Java 17
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+
+      - name: Configurar Flutter
+        uses: subosito/flutter-action@v2
+        with:
+          flutter-version: '3.24.5'
+          channel: stable
+          cache: true
+
+      - name: Instalar dependências
+        run: flutter pub get
+
+      # O código do dia a dia é escrito à mão; o `dart format` é a fonte da
+      # verdade e o CI devolve o resultado formatado para o branch, para que o
+      # diff do PR nunca contenha ruído de estilo.
+      - name: Aplicar formatação
+        if: github.event_name == 'push' && !contains(github.event.head_commit.message, 'formatação automática')
+        run: |
+          dart format lib test | tee format.log
+          if [ -n "$(git status --porcelain lib test)" ]; then
+            git config user.name "github-actions[bot]"
+            git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+            git add lib test
+            git commit -m "style: formatação automática [skip ci]"
+            git push
+          fi
+        continue-on-error: true
+
+      - name: Analisar código estático
+        continue-on-error: true
+        run: flutter analyze --no-fatal-infos | tee analyze.log
+
+      - name: Rodar testes
+        continue-on-error: true
+        run: flutter test --reporter expanded | tee test.log
+
+      - name: Resumo
+        if: always()
+        run: |
+          {
+            echo '### Qualidade do código'
+            echo
+            echo '**Formatação**'
+            echo '```'
+            tail -n 20 format.log 2>/dev/null || echo 'sem saída'
+            echo '```'
+            echo
+            echo '**Analisar**'
+            echo '```'
+            tail -n 80 analyze.log 2>/dev/null || echo 'sem saída'
+            echo '```'
+            echo
+            echo '**Testes**'
+            echo '```'
+            tail -n 60 test.log 2>/dev/null || echo 'sem saída'
+            echo '```'
+          } >> "$GITHUB_STEP_SUMMARY"
+
+      # Os logs também vão para o PR: o sandbox de desenvolvimento não alcança
+      # os artefatos do Actions, e o resumo no PR mantém o histórico visível.
+      - name: Comentar resultado no PR
+        if: always() && github.event_name == 'pull_request'
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const fs = require('fs');
+            const read = (f) => {
+              try { return fs.readFileSync(f, 'utf8'); } catch (e) { return '(sem saída)'; }
+            };
+            const clip = (s, n) => (s.length > n ? s.slice(0, n) + '\n… (truncado)' : s);
+            const body = [
+              '## Qualidade do código — ' + (process.env.RUN_RESULT || 'run'),
+              '',
+              '**Commit:** `' + context.sha.slice(0, 8) + '`',
+              '',
+              '<details><summary>dart format</summary>',
+              '',
+              '```',
+              clip(read('format.log'), 4000),
+              '```',
+              '',
+              '</details>',
+              '<details open><summary>flutter analyze</summary>',
+              '',
+              '```',
+              clip(read('analyze.log'), 24000),
+              '```',
+              '',
+              '</details>',
+              '<details open><summary>flutter test</summary>',
+              '',
+              '```',
+              clip(read('test.log'), 12000),
+              '```',
+              '',
+              '</details>',
+            ].join('\n');
+            await github.rest.issues.createComment({
+              issue_number: context.issue.number,
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              body: body,
+            });
+
+      - name: Publicar logs
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: quality-logs
+          path: |
+            format.log
+            analyze.log
+            test.log
+          if-no-files-found: warn
+          retention-days: 7
+
+  # Compila o APK de debug e devolve o log no PR. Roda só quando a mensagem do
+  # commit contém "[apk]" — para não pagar 8 minutos de Gradle em todo push.
+  apk:
+    name: Compilar APK (debug)
+    if: contains(github.event.head_commit.message, '[apk]')
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    permissions:
+      contents: read
+      pull-requests: write
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Configurar Java 17
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+
+      - name: Configurar Flutter
+        uses: subosito/flutter-action@v2
+        with:
+          flutter-version: '3.24.5'
+          channel: stable
+          cache: true
+
+      - name: Instalar dependências
+        run: flutter pub get
+
+      - name: Versões do toolchain
+        run: |
+          flutter --version
+          java -version 2>&1 | head -n 1
+          cat android/gradle.properties
+
+      - name: Compilar APK de debug
+        id: build
+        continue-on-error: true
+        run: flutter build apk --debug 2>&1 | tee apk.log
+
+      - name: Comentar o resultado no PR
+        if: always()
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          PR=$(gh pr list --head "${GITHUB_REF_NAME}" --state open --json number --jq '.[0].number' || true)
+          {
+            echo "## Build do APK — \`${GITHUB_SHA:0:8}\`"
+            echo
+            echo '```'
+            tail -n 200 apk.log 2>/dev/null || echo '(sem log)'
+            echo '```'
+            echo
+            if [ -f build/app/outputs/flutter-apk/app-debug.apk ]; then
+              echo "✅ APK gerado."
+            else
+              echo "❌ Falhou."
+            fi
+          } > body.md
+          if [ -n "$PR" ]; then
+            gh pr comment "$PR" --body-file body.md
+          else
+            cat body.md
+          fi
+
+      - name: Publicar APK
+        if: success()
+        uses: actions/upload-artifact@v4
+        with:
+          name: kame-io-debug-apk-ci
+          path: build/app/outputs/flutter-apk/app-debug.apk
+          if-no-files-found: warn
+          retention-days: 7
