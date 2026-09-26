@@ -104,11 +104,11 @@ class _GlyphPainter extends CustomPainter {
   }
 
   @override
-  bool shouldRepaint(covariant _GlyphPainter old) =>
-      old.progress != progress ||
-      old.color != color ||
-      old.weight != weight ||
-      old.glyph != glyph;
+  bool shouldRepaint(covariant _GlyphPainter oldDelegate) =>
+      oldDelegate.progress != progress ||
+      oldDelegate.color != color ||
+      oldDelegate.weight != weight ||
+      oldDelegate.glyph != glyph;
 }
 
 /// Troca de glifo com **reforma da matéria**: o ícone novo se desenha a partir

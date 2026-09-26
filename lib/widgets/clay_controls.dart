@@ -599,7 +599,7 @@ class _WavePainter extends CustomPainter {
   }
 
   @override
-  bool shouldRepaint(covariant _WavePainter old) =>
+  bool shouldRepaint(covariant _WavePainter oldDelegate) =>
       oldDelegate.progress != progress ||
       oldDelegate.radius != radius ||
       oldDelegate.color != color;
@@ -629,7 +629,7 @@ class _HaloPainter extends CustomPainter {
   }
 
   @override
-  bool shouldRepaint(covariant _HaloPainter old) =>
+  bool shouldRepaint(covariant _HaloPainter oldDelegate) =>
       oldDelegate.radius != radius ||
       oldDelegate.opacity != opacity ||
       oldDelegate.color != color;

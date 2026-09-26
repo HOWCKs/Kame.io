@@ -776,7 +776,7 @@ class _GridPainter extends CustomPainter {
   }
 
   @override
-  bool shouldRepaint(covariant _GridPainter old) => old.inset != inset;
+  bool shouldRepaint(covariant _GridPainter oldDelegate) => oldDelegate.inset != inset;
 }
 
 /// Recorte em squircle reutilizado por palco e miniaturas.
