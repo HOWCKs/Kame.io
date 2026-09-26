@@ -258,7 +258,7 @@ class ClayFieldPainter extends CustomPainter {
   final int angles;
 
   /// Campo de metaballs: Σ rᵢ²/dᵢ². A superfície é o nível 1.
-  double _field(Offset p) {
+  static double fieldAt(List<ClaySample> samples, Offset p) {
     var sum = 0.0;
     for (final s in samples) {
       final dx = p.dx - s.center.dx;
@@ -293,7 +293,7 @@ class ClayFieldPainter extends CustomPainter {
         var hi = lo;
         var guard = 0;
         while (hi < maxR &&
-            _field(Offset(s.center.dx + dx * hi, s.center.dy + dy * hi)) > 1) {
+            fieldAt(samples, Offset(s.center.dx + dx * hi, s.center.dy + dy * hi)) > 1) {
           lo = hi;
           hi += step;
           if (++guard > 72) break;
@@ -302,7 +302,7 @@ class ClayFieldPainter extends CustomPainter {
         // Bisseção: 6 iterações dão precisão sub-pixel em qualquer densidade.
         for (var k = 0; k < 6; k++) {
           final mid = (lo + hi) * 0.5;
-          if (_field(Offset(s.center.dx + dx * mid, s.center.dy + dy * mid)) >
+          if (fieldAt(samples, Offset(s.center.dx + dx * mid, s.center.dy + dy * mid)) >
               1) {
             lo = mid;
           } else {

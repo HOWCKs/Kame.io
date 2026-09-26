@@ -1,6 +1,7 @@
 import 'package:camera/camera.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:kame_io/shape/clay_squircle.dart';
 import 'package:kame_io/widgets/clay_control_bar.dart';
 
 void main() {

@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 
 import 'motion/clay_motion.dart';
+import 'navigation/clay_route.dart';
 import 'screens/atlas_screen.dart';
 import 'screens/onboarding_screen.dart';
 import 'screens/settings_screen.dart';

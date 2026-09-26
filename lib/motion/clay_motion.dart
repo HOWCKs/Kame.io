@@ -149,7 +149,7 @@ class ClayHaptics {
     HapticFeedback.mediumImpact();
   }
 
-  static void setle(BuildContext context) {
+  static void settle(BuildContext context) {
     if (!ClayMotionScope.of(context).haptics) return;
     HapticFeedback.lightImpact();
   }

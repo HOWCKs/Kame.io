@@ -1,3 +1,5 @@
+import 'dart:ui' show PathMetric;
+
 import 'package:flutter/material.dart';
 
 import '../icons/clay_glyphs.dart';
@@ -150,7 +152,7 @@ class ClayGlyphSwap extends StatelessWidget {
 
     return TweenAnimationBuilder<double>(
       key: ValueKey<Object?>(identity ?? glyph),
-      tween: const Tween<double>(begin: 0, end: 1),
+      tween: const Tween<double>(begin: 0.0, end: 1.0),
       duration: motion.d(ClayDurations.morph),
       curve: motion.curve(ClayCurves.softOut),
       builder: (context, t, _) {

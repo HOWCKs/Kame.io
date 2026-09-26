@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:kame_io/icons/clay_glyphs.dart';
 import 'package:kame_io/motion/clay_motion.dart';
@@ -107,7 +108,6 @@ void main() {
         MediaQuery(
           data: const MediaQueryData(disableAnimations: true),
           child: MaterialApp(
-            useInheritedMediaQuery: true,
             home: Builder(
               builder: (context) {
                 data = ClayMotionScope.of(context);

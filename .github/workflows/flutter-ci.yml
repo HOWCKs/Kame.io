@@ -36,11 +36,21 @@ jobs:
       - name: Instalar dependências
         run: flutter pub get
 
-      # Informativo: o diff aparece no log, mas não reprova o build (a
-      # formatação não muda comportamento e pode ser aplicada depois).
-      - name: Conferir formatação
+      # O código do dia a dia é escrito à mão; o `dart format` é a fonte da
+      # verdade e o CI devolve o resultado formatado para o branch, para que o
+      # diff do PR nunca contenha ruído de estilo.
+      - name: Aplicar formatação
+        if: github.event_name == 'push' && !contains(github.event.head_commit.message, 'formatação automática')
+        run: |
+          dart format lib test | tee format.log
+          if [ -n "$(git status --porcelain lib test)" ]; then
+            git config user.name "github-actions[bot]"
+            git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+            git add lib test
+            git commit -m "style: formatação automática [skip ci]"
+            git push
+          fi
         continue-on-error: true
-        run: dart format --output=none --set-exit-if-changed lib test | tee format.log
 
       - name: Analisar código estático
         continue-on-error: true

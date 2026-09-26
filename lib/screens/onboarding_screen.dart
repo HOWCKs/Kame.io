@@ -8,7 +8,6 @@ import '../services/morph_vault.dart';
 import '../theme/clay_tokens.dart';
 import '../widgets/clay_field.dart';
 import '../widgets/clay_states.dart';
-import '../widgets/clay_surface.dart';
 import 'studio_screen.dart';
 
 /// Primeira abertura.

@@ -385,7 +385,7 @@ class ClaySwitch extends StatelessWidget {
                               focused: state.focused,
                               enabled: true,
                               elevation: ClayElevation.l1,
-                              body: ui.Gradient.lerp(
+                              body: LinearGradient.lerp(
                                 ClayPalette.porcelainBody,
                                 ClayPalette.kilnBody,
                                 t,

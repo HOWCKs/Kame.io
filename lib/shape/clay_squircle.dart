@@ -141,11 +141,19 @@ class ClayShape {
 }
 
 /// `ShapeBorder` do squircle — usado em `Material`, `InkWell` e recortes.
-class ClaySquircle extends ShapeBorder {
-  const ClaySquircle({this.radius = ClayRadii.card, this.n = 3.2});
+class ClaySquircle extends OutlinedBorder {
+  const ClaySquircle({
+    this.radius = ClayRadii.card,
+    this.n = 3.2,
+    super.side,
+  });
 
   final double radius;
   final double n;
+
+  @override
+  OutlinedBorder copyWith({BorderSide? side}) =>
+      ClaySquircle(radius: radius, n: n, side: side ?? this.side);
 
   @override
   EdgeInsetsGeometry get dimensions => EdgeInsets.zero;

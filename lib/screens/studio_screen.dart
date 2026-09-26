@@ -248,6 +248,7 @@ class _StudioScreenState extends State<StudioScreen>
     if (widget.settings.shutterSound) {
       await SystemSound.play(SystemSoundType.click);
     }
+    if (!mounted) return;
     ClayHaptics.shape(context);
     try {
       final file = await controller.takePicture();
@@ -294,7 +295,8 @@ class _StudioScreenState extends State<StudioScreen>
             if (mounted) setState(() => _recSeconds++);
           },
         );
-        if (mounted) setState(() => _recording = true);
+        if (!mounted) return;
+        setState(() => _recording = true);
         ClayHaptics.shape(context);
       } catch (e) {
         if (mounted) _toastNow(message: 'Não foi possível gravar: $e');
@@ -730,7 +732,7 @@ class ClayGridOverlay extends StatelessWidget {
     final motion = ClayMotionScope.of(context);
     return IgnorePointer(
       child: TweenAnimationBuilder<double>(
-        tween: const Tween<double>(begin: 0, end: 1),
+        tween: const Tween<double>(begin: 0.0, end: 1.0),
         duration: motion.d(ClayDurations.morph),
         curve: motion.curve(ClayCurves.softOut),
         builder: (context, t, _) {
