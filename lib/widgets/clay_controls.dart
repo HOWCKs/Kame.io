@@ -339,68 +339,68 @@ class ClaySwitch extends StatelessWidget {
     final puck = height - 8;
 
     return TweenAnimationBuilder<double>(
-      tween: Tween<double>(begin: value ? 1 : 0, end: value ? 1 : 0),
-      duration: motion.d(ClayDurations.quick),
-      curve: motion.curve(ClayCurves.squish),
-      builder: (context, t, _) {
-        final travel = (width - puck - 8) * t;
-        return ClayPressable(
-          onTap: () {
-            ClayHaptics.tap(context);
-            onChanged(!value);
-          },
-          semanticLabel: semanticLabel,
-          toggled: value,
-          builder: (context, state) {
-            final press = state.press.clamp(-0.2, 1.0);
-            return Transform.scale(
-              scale: 1 - 0.03 * press,
-              child: SizedBox(
-                width: width,
-                height: height,
-                child: Stack(
-                  children: <Widget>[
-                    Positioned.fill(
-                      child: CustomPaint(
-                        painter: ClayGroovePainter(
-                          radius: height / 2,
-                          depth: 0.42,
+        tween: Tween<double>(begin: value ? 1 : 0, end: value ? 1 : 0),
+        duration: motion.d(ClayDurations.quick),
+        curve: motion.curve(ClayCurves.squish),
+        builder: (context, t, _) {
+          final travel = (width - puck - 8) * t;
+          return ClayPressable(
+            onTap: () {
+              ClayHaptics.tap(context);
+              onChanged(!value);
+            },
+            semanticLabel: semanticLabel,
+            toggled: value,
+            builder: (context, state) {
+              final press = state.press.clamp(-0.2, 1.0);
+              return Transform.scale(
+                scale: 1 - 0.03 * press,
+                child: SizedBox(
+                  width: width,
+                  height: height,
+                  child: Stack(
+                    children: <Widget>[
+                      Positioned.fill(
+                        child: CustomPaint(
+                          painter: ClayGroovePainter(
+                            radius: height / 2,
+                            depth: 0.42,
+                          ),
                         ),
                       ),
-                    ),
-                    Positioned(
-                      left: 4 + travel,
-                      top: 4,
-                      child: Transform.scale(
-                        scaleX: 1 + 0.12 * press,
-                        scaleY: 1 - 0.1 * press,
-                        child: CustomPaint(
-                          size: Size.square(puck),
-                          painter: ClaySurfacePainter(
-                            kind: ClayMaterialKind.porcelain,
-                            radius: puck / 2,
-                            press: press,
-                            hovered: state.hovered,
-                            focused: state.focused,
-                            enabled: true,
-                            elevation: ClayElevation.l1,
-                            body: LinearGradient.lerp(
-                              ClayPalette.porcelainBody,
-                              ClayPalette.kilnBody,
-                              t,
+                      Positioned(
+                        left: 4 + travel,
+                        top: 4,
+                        child: Transform.scale(
+                          scaleX: 1 + 0.12 * press,
+                          scaleY: 1 - 0.1 * press,
+                          child: CustomPaint(
+                            size: Size.square(puck),
+                            painter: ClaySurfacePainter(
+                              kind: ClayMaterialKind.porcelain,
+                              radius: puck / 2,
+                              press: press,
+                              hovered: state.hovered,
+                              focused: state.focused,
+                              enabled: true,
+                              elevation: ClayElevation.l1,
+                              body: LinearGradient.lerp(
+                                ClayPalette.porcelainBody,
+                                ClayPalette.kilnBody,
+                                t,
+                              ),
                             ),
                           ),
                         ),
                       ),
-                    ),
-                  ],
+                    ],
+                  ),
                 ),
-              ),
-            );
-          },
-        );
-      },
-    );
+              );
+            },
+          );
+        },
+      );
   }
 }
 
@@ -433,7 +433,7 @@ class ClayShutter extends StatefulWidget {
 }
 
 class _ClayShutterState extends State<ClayShutter>
-    with SingleTickerProviderStateMixin {
+    with TickerProviderStateMixin {
   late final AnimationController _wave = AnimationController(
     vsync: this,
     duration: ClayDurations.sculpt,
