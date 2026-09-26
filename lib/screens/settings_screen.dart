@@ -250,7 +250,7 @@ class SettingsScreen extends StatelessWidget {
         mainAxisSize: MainAxisSize.min,
         crossAxisAlignment: CrossAxisAlignment.start,
         children: <Widget>[
-          SizedBox(
+          const SizedBox(
             height: 168,
             child: ClayField(
               hint: 'arraste a massa',

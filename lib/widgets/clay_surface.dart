@@ -450,20 +450,20 @@ class ClaySurfacePainter extends CustomPainter {
   }
 
   @override
-  bool shouldRepaint(covariant ClaySurfacePainter old) =>
-      old.kind != kind ||
-      old.radius != radius ||
-      old.press != press ||
-      old.hovered != hovered ||
-      old.focused != focused ||
-      old.enabled != enabled ||
-      old.elevation != elevation ||
-      old.tint != tint ||
-      old.tintStrength != tintStrength ||
-      old.glow != glow ||
-      old.strokeWidth != strokeWidth ||
-      old.specular != specular ||
-      old.body != body;
+  bool shouldRepaint(covariant ClaySurfacePainter oldDelegate) =>
+      oldDelegate.kind != kind ||
+      oldDelegate.radius != radius ||
+      oldDelegate.press != press ||
+      oldDelegate.hovered != hovered ||
+      oldDelegate.focused != focused ||
+      oldDelegate.enabled != enabled ||
+      oldDelegate.elevation != elevation ||
+      oldDelegate.tint != tint ||
+      oldDelegate.tintStrength != tintStrength ||
+      oldDelegate.glow != glow ||
+      oldDelegate.strokeWidth != strokeWidth ||
+      oldDelegate.specular != specular ||
+      oldDelegate.body != body;
 }
 
 /// A superfície de argila: tudo o que tem material no app passa por aqui.

@@ -3,223 +3,1106 @@
 <head>
 <meta charset="utf-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1" />
-<title>Kame.io — preview da navegação "notch"</title>
+<title>Kame.io — CLAY MORPHIST · vitrine interativa</title>
 <style>
+  /* ───────────────────────────────────────────────────────────────────────
+     CLAY MORPHIST — tokens
+     Dois materiais (obsidian / porcelain) + esmalte queimado. A mesma regra
+     do app Flutter: estado é volume, não cor.
+     ─────────────────────────────────────────────────────────────────────── */
   :root{
-    --bg:#06070D;
-    --bar:#F4F5F7;
-    --idle:#63697A;
-    --accent:#E8384F;
-    --amber:#F5A623;
+    --abyss:#08090D; --bedrock:#101219; --clay-low:#171A23; --clay-mid:#1E222E; --clay-high:#272C3A;
+    --rim:rgba(255,255,255,.08); --rim-strong:rgba(255,255,255,.14);
+    --chalk:#F4F1EC; --ash:#A7A29B; --smoke:#8A867F;
+    --porcelain:#F2EDE6; --porcelain-edge:#FFFDFA; --porcelain-shade:#DCD3C8; --porcelain-deep:#C6BBAD;
+    --ink:#2A2521; --ink-soft:#6B625A;
+    --kiln:#E9642F; --kiln-light:#FF8A4C; --kiln-dark:#B8431A;
+    --ember:#FF4D6D; --celadon:#4FD1B0; --cobalt:#6B8AFD; --ochre:#E9B44C;
+
+    --r-chip:12px; --r-control:18px; --r-card:24px; --r-sheet:32px;
+    --fast:90ms; --quick:180ms; --morph:340ms; --sculpt:620ms;
+    --soft:cubic-bezier(.22,1,.36,1); --melt:cubic-bezier(.7,0,.3,1); --squish:cubic-bezier(.34,1.42,.64,1);
   }
   *{box-sizing:border-box;margin:0;padding:0}
+  html{scroll-behavior:smooth}
   body{
-    min-height:100vh;display:grid;place-items:center;padding:32px 16px;
-    background:#04050a;color:#E8ECFA;
-    font-family:ui-sans-serif,system-ui,"Segoe UI",Roboto,Inter,sans-serif;
-  }
-  .wrap{display:flex;flex-direction:column;align-items:center;gap:20px}
-  .phone{
-    width:390px;height:800px;border-radius:44px;overflow:hidden;position:relative;
-    border:1px solid rgba(255,255,255,.10);
-    box-shadow:0 40px 90px rgba(0,0,0,.65), inset 0 0 0 8px #0a0c16;
-    background:var(--bg);
-  }
-
-  /* ---------- viewfinder (placeholder da foto de plantas) ---------- */
-  .viewfinder{
-    position:absolute;inset:26px 68px 120px;border-radius:26px;overflow:hidden;
     background:
-      radial-gradient(46% 34% at 30% 20%, #3c6b45 0%, rgba(60,107,69,0) 70%),
-      radial-gradient(30% 26% at 34% 40%, #6a4a33 0%, rgba(106,74,51,0) 72%),
-      radial-gradient(38% 30% at 74% 46%, #4f7a4a 0%, rgba(79,122,74,0) 74%),
-      radial-gradient(60% 42% at 62% 74%, #8a6a44 0%, rgba(138,106,68,0) 78%),
-      linear-gradient(175deg,#b9c3cf 0%, #7e8794 30%, #4c443c 62%, #241d18 100%);
+      radial-gradient(1200px 600px at 78% -8%, #171A23 0%, rgba(23,26,35,0) 62%),
+      radial-gradient(900px 520px at 6% 104%, #14161F 0%, rgba(20,22,31,0) 58%),
+      var(--abyss);
+    color:var(--chalk);
+    font-family:ui-sans-serif,system-ui,-apple-system,"Segoe UI",Roboto,Inter,sans-serif;
+    -webkit-font-smoothing:antialiased;
+    min-height:100vh; padding:40px 24px 72px;
+  }
+  .wrap{max-width:1240px;margin:0 auto}
+
+  /* ---------- cabeçalho ---------- */
+  header{display:flex;align-items:flex-end;gap:24px;flex-wrap:wrap;margin-bottom:8px}
+  .brandmark{width:52px;height:52px;flex:none}
+  h1{font-size:34px;line-height:40px;letter-spacing:-.7px;font-weight:700}
+  .sub{color:var(--ash);font-size:15px;line-height:22px;max-width:56ch;margin-top:6px}
+  .tag{
+    display:inline-flex;align-items:center;gap:6px;font-size:11px;line-height:14px;letter-spacing:.9px;
+    font-weight:600;text-transform:uppercase;color:var(--smoke);
+    border:1px solid var(--rim);border-radius:999px;padding:6px 12px;
+  }
+  .rule{height:1px;background:var(--rim);margin:28px 0}
+
+  /* ---------- superfície de argila (compartilhada) ---------- */
+  .clay{
+    position:relative; border-radius:var(--r-card);
+    background:linear-gradient(150deg,var(--clay-high) 0%,var(--clay-mid) 50%,var(--clay-low) 100%);
+    box-shadow:0 14px 34px rgba(0,0,0,.42);
+  }
+  .clay::before{ /* realce interno no topo */
+    content:"";position:absolute;inset:0;border-radius:inherit;pointer-events:none;
+    background:linear-gradient(to bottom,rgba(255,255,255,.10),rgba(255,255,255,0) 42%);
+  }
+  .clay::after{ /* sombra interna embaixo */
+    content:"";position:absolute;inset:0;border-radius:inherit;pointer-events:none;
+    background:linear-gradient(to bottom,rgba(0,0,0,0) 58%,rgba(0,0,0,.40));
+  }
+  .porcelain{
+    position:relative;border-radius:var(--r-card);
+    background:linear-gradient(150deg,var(--porcelain-edge) 0%,var(--porcelain) 48%,var(--porcelain-shade) 100%);
+    box-shadow:0 14px 34px rgba(0,0,0,.42), 0 2px 0 rgba(255,255,255,.6) inset;
+  }
+  .clay>*,.porcelain>*{position:relative;z-index:1}
+
+  /* ---------- grade de trabalho ---------- */
+  .stage{display:grid;grid-template-columns:minmax(0,1fr) 402px;gap:32px;align-items:start}
+  @media (max-width:1080px){ .stage{grid-template-columns:1fr} .phone-col{order:-1;display:flex;justify-content:center} }
+
+  .panels{display:flex;flex-direction:column;gap:24px;min-width:0}
+  .panel{padding:22px 22px 24px}
+  .panel h2{font-size:11px;letter-spacing:.9px;text-transform:uppercase;color:var(--smoke);font-weight:600;margin-bottom:16px}
+  .panel h3{font-size:18px;letter-spacing:-.2px;font-weight:600;margin-bottom:6px}
+  .note{color:var(--ash);font-size:14px;line-height:20px}
+
+  /* ---------- paleta ---------- */
+  .swatches{display:grid;grid-template-columns:repeat(auto-fill,minmax(112px,1fr));gap:10px}
+  .sw{border-radius:14px;padding:12px;border:1px solid var(--rim);background:var(--clay-low)}
+  .sw .chip{height:44px;border-radius:9px;margin-bottom:9px;border:1px solid rgba(255,255,255,.10)}
+  .sw b{display:block;font-size:12px;font-weight:600}
+  .sw span{display:block;font-size:10.5px;color:var(--smoke);letter-spacing:.5px;margin-top:2px}
+
+  /* ---------- tipografia ---------- */
+  .type-row{display:flex;align-items:baseline;gap:14px;padding:11px 0;border-bottom:1px solid var(--rim)}
+  .type-row:last-child{border-bottom:0}
+  .type-row .meta{width:112px;flex:none;font-size:10.5px;color:var(--smoke);letter-spacing:.6px;text-transform:uppercase}
+
+  /* ---------- glifos ---------- */
+  .glyphs{display:grid;grid-template-columns:repeat(auto-fill,minmax(84px,1fr));gap:10px}
+  .glyph{
+    aspect-ratio:1;border-radius:14px;background:var(--clay-low);border:1px solid var(--rim);
+    display:flex;flex-direction:column;align-items:center;justify-content:center;gap:7px;
+    cursor:pointer;transition:transform var(--quick) var(--soft),background var(--quick) var(--soft),border-color var(--quick) var(--soft);
+  }
+  .glyph svg{width:26px;height:26px}
+  .glyph span{font-size:9.5px;color:var(--smoke);letter-spacing:.6px;text-transform:uppercase;text-align:center;padding:0 4px}
+  .glyph:hover{transform:translateY(-3px);background:var(--clay-high);border-color:var(--rim-strong)}
+  .glyph:active{transform:translateY(0) scale(.96)}
+  .glyph svg path,.glyph svg circle,.glyph svg rect,.glyph svg line,.glyph svg polygon{
+    stroke-dasharray:var(--len,200);stroke-dashoffset:var(--len,200);
+    animation:draw 620ms var(--soft) forwards;
+  }
+  @keyframes draw{to{stroke-dashoffset:0}}
+
+  /* ---------- botões de demonstração ---------- */
+  .row{display:flex;flex-wrap:wrap;gap:10px;align-items:center}
+  .demo-btn{
+    border:1px solid var(--rim);background:var(--clay-mid);color:var(--chalk);
+    font:inherit;font-size:13px;font-weight:600;letter-spacing:.1px;
+    padding:11px 16px;border-radius:var(--r-chip);cursor:pointer;min-height:44px;
+    transition:transform var(--fast) var(--soft),background var(--quick) var(--soft);
+  }
+  .demo-btn:hover{background:var(--clay-high)}
+  .demo-btn:active{transform:scale(.96)}
+  .demo-btn[aria-pressed="true"]{background:var(--kiln);border-color:transparent;color:#fff}
+  .demo-btn:focus-visible{outline:2px solid var(--celadon);outline-offset:3px}
+
+  /* ---------- telefone ---------- */
+  .phone{
+    width:390px;height:812px;flex:none;border-radius:46px;position:relative;overflow:hidden;
+    background:var(--abyss);border:1px solid rgba(255,255,255,.10);
+    box-shadow:0 44px 90px rgba(0,0,0,.66), inset 0 0 0 9px #07080C;
+  }
+  .screen{position:absolute;inset:9px;border-radius:38px;overflow:hidden;background:var(--abyss)}
+  .viewfinder{
+    position:absolute;inset:0;
+    background:
+      radial-gradient(46% 32% at 28% 18%, rgba(60,107,69,.85) 0%, rgba(60,107,69,0) 70%),
+      radial-gradient(30% 24% at 36% 42%, rgba(106,74,51,.9) 0%, rgba(106,74,51,0) 72%),
+      radial-gradient(40% 30% at 76% 48%, rgba(79,122,74,.85) 0%, rgba(79,122,74,0) 74%),
+      radial-gradient(64% 44% at 60% 78%, rgba(138,106,68,.9) 0%, rgba(138,106,68,0) 78%),
+      linear-gradient(172deg,#B9C3CF 0%,#7E8794 30%,#4C443C 62%,#241D18 100%);
     filter:saturate(1.05);
-    transition:transform .5s cubic-bezier(.22,1,.36,1);
+    transition:transform var(--morph) var(--melt);
   }
-  .viewfinder.flipped{transform:scaleX(-1)}
-  .vf-blur{position:absolute;inset:-40px;filter:blur(26px);background:inherit;z-index:-1}
-  .flashfx{position:absolute;inset:0;background:#fff;opacity:0;pointer-events:none;transition:opacity .12s}
-  .flashfx.on{opacity:.85}
+  .viewfinder.flip{transform:scaleX(-1)}
+  .scrim{position:absolute;inset:0;pointer-events:none;
+    background:linear-gradient(to bottom,rgba(8,9,13,.72) 0,rgba(8,9,13,0) 22%,rgba(8,9,13,0) 58%,rgba(8,9,13,.86) 100%)}
+  .flashfx{position:absolute;inset:0;background:#fff;opacity:0;pointer-events:none;transition:opacity 120ms linear}
+  .flashfx.on{opacity:.86}
 
-  /* topo: miniatura + nome + timer */
-  .topbar{position:absolute;top:18px;left:16px;right:16px;display:flex;align-items:center;gap:8px}
+  /* topo do app */
+  .topbar{position:absolute;top:16px;left:16px;right:16px;display:flex;align-items:center;gap:10px;z-index:4}
   .thumb{
-    width:44px;height:44px;border-radius:12px;overflow:hidden;cursor:pointer;
-    border:1px solid rgba(255,255,255,.14);background:rgba(255,255,255,.08);
-    display:grid;place-items:center;color:#8C93B5;font-size:18px;
+    width:46px;height:46px;border-radius:14px;overflow:hidden;cursor:pointer;position:relative;
+    border:1px solid var(--rim);background:linear-gradient(150deg,#FFFDFA,#F2EDE6 48%,#DCD3C8);
+    display:grid;place-items:center;color:var(--ink-soft);
+    box-shadow:0 6px 18px rgba(0,0,0,.34);
   }
-  .thumb.has{background:linear-gradient(140deg,#3c6b45,#8a6a44)}
-  .spacer{flex:1}
-  .rectimer{
-    display:none;align-items:center;gap:6px;padding:6px 10px;border-radius:999px;
-    background:rgba(0,0,0,.7);font-weight:600;font-size:12px;font-variant-numeric:tabular-nums;
+  .thumb canvas{width:100%;height:100%;display:block}
+  .badge{
+    position:absolute;top:-5px;right:-5px;background:linear-gradient(150deg,var(--kiln-light),var(--kiln) 45%,var(--kiln-dark));
+    color:#fff;font-size:10px;font-weight:700;padding:2px 6px;border-radius:999px;border:1px solid rgba(0,0,0,.25);
   }
-  .rectimer.on{display:flex}
-  .recdot{width:8px;height:8px;border-radius:50%;background:var(--accent);animation:pulse 1s infinite}
+  .brandtag{font-size:10px;letter-spacing:.9px;font-weight:700;color:var(--smoke);text-transform:uppercase}
+  .recchip{
+    display:none;align-items:center;gap:6px;padding:6px 11px;border-radius:999px;
+    background:var(--clay-low);border:1px solid var(--rim);font-size:13px;font-weight:600;font-variant-numeric:tabular-nums;
+    box-shadow:0 6px 18px rgba(0,0,0,.34);
+  }
+  .recchip.on{display:flex}
+  .recdot{width:8px;height:8px;border-radius:50%;background:var(--ember);animation:pulse 1s infinite}
   @keyframes pulse{50%{opacity:.35}}
-  .brand{font-weight:700;letter-spacing:.4px}
 
-  /* ---------- barra "notch" ---------- */
-  .barzone{position:absolute;left:16px;right:16px;bottom:12px;height:136px}
-  .barzone svg.shape{position:absolute;left:0;right:0;bottom:0;width:100%;height:96px;
-    filter:drop-shadow(0 14px 24px rgba(0,0,0,.45));}
-  .glow{
-    position:absolute;left:50%;top:-35px;width:150px;height:150px;transform:translateX(-50%);
-    border-radius:50%;pointer-events:none;
-    background:radial-gradient(closest-side, rgba(124,77,255,.50), rgba(88,101,255,.28) 55%, transparent 78%);
+  /* barra de controle */
+  .barzone{position:absolute;left:14px;right:14px;bottom:14px;height:128px;z-index:5}
+  .barzone svg.barmass{position:absolute;left:0;right:0;bottom:14px;width:100%;height:114px;
+    filter:drop-shadow(0 12px 20px rgba(0,0,0,.46))}
+  .baritems{position:absolute;left:0;right:0;bottom:14px;height:78px;display:flex;align-items:center;
+    padding:0 10px;gap:0}
+  .vein{flex:2;position:relative;height:58px}
+  .vein .groove{position:absolute;inset:0;border-radius:999px;
+    background:linear-gradient(to bottom,rgba(0,0,0,.34),rgba(0,0,0,.08));
+    box-shadow:inset 0 2px 3px rgba(0,0,0,.5), inset 0 -1px 0 rgba(255,255,255,.28)}
+  .vein .blob{
+    position:absolute;top:4px;bottom:4px;width:calc(50% - 8px);border-radius:999px;
+    background:linear-gradient(150deg,#FFFDFA,#F2EDE6 48%,#DCD3C8);
+    box-shadow:0 6px 18px rgba(0,0,0,.28);
+    transition:transform var(--morph) var(--melt);
   }
-  .fab{
-    position:absolute;left:50%;top:0;transform:translateX(-50%);
-    width:80px;height:80px;border-radius:50%;background:#F7F8FA;cursor:pointer;border:0;
-    box-shadow:0 8px 26px rgba(124,77,255,.40);
+  .vein .blob::after{content:"";position:absolute;inset:0;border-radius:inherit;
+    background:radial-gradient(70% 50% at 30% 16%, rgba(233,100,47,.30), rgba(233,100,47,0) 72%)}
+  .vein .opts{position:absolute;inset:0;display:flex}
+  .vein .opt{flex:1;border:0;background:none;cursor:pointer;display:flex;flex-direction:column;
+    align-items:center;justify-content:center;gap:3px;color:var(--ink-soft);min-height:48px}
+  .vein .opt svg{width:21px;height:21px}
+  .vein .opt span{font-size:10px;font-weight:600;letter-spacing:.8px}
+  .vein .opt[aria-selected="true"]{color:var(--kiln-dark)}
+  .vein .opt[aria-selected="true"] span{color:var(--ink)}
+  .gap{width:56px;flex:none}
+  .actions{flex:3;display:flex;gap:4px}
+  .action{
+    flex:1;border:0;background:none;cursor:pointer;border-radius:var(--r-control);
+    display:flex;flex-direction:column;align-items:center;justify-content:center;gap:3px;
+    color:var(--ink-soft);min-height:48px;transition:transform var(--fast) var(--soft),color var(--quick) var(--soft);
+  }
+  .action svg{width:22px;height:22px}
+  .action span{font-size:10px;font-weight:600;letter-spacing:.8px}
+  .action:hover{color:var(--ink)}
+  .action:active{transform:scale(.95)}
+  .action[aria-pressed="true"]{color:var(--kiln-dark)}
+  .action[disabled]{opacity:.42;cursor:default}
+  .action:focus-visible,.vein .opt:focus-visible,.shutter:focus-visible{outline:2px solid var(--celadon);outline-offset:3px}
+
+  .shutter{
+    position:absolute;left:50%;top:8px;transform:translateX(-50%);
+    width:56px;height:56px;border-radius:50%;border:0;cursor:pointer;
+    background:radial-gradient(120% 120% at 30% 18%, var(--kiln-light) 0%, var(--kiln) 46%, var(--kiln-dark) 100%);
+    box-shadow:0 12px 34px rgba(233,100,47,.55), 0 2px 0 rgba(255,255,255,.35) inset;
     display:grid;place-items:center;
+    transition:transform var(--morph) var(--squish), border-radius var(--morph) var(--squish), width var(--morph) var(--squish), height var(--morph) var(--squish);
   }
-  .fab:active{transform:translateX(-50%) scale(.96)}
-  .fab .inner{
-    width:64px;height:64px;border-radius:50%;
-    background:linear-gradient(135deg,#FF5A6B,#E11D3C);
-    transition:all .22s cubic-bezier(.22,1,.36,1);
+  .shutter .inner{width:36px;height:36px;border-radius:50%;border:1.6px solid rgba(255,255,255,.55);transition:opacity var(--quick) var(--soft)}
+  .shutter:active{transform:translateX(-50%) scale(.93)}
+  .shutter.rec{width:31px;height:31px;border-radius:9px}
+  .shutter.rec .inner{opacity:0}
+  .shutter[disabled]{filter:saturate(.2) brightness(.8);box-shadow:none;cursor:default}
+  .halo{
+    position:absolute;left:50%;top:8px;transform:translateX(-50%);width:56px;height:56px;border-radius:50%;
+    pointer-events:none;filter:blur(16px);opacity:.34;background:var(--kiln);
+    transition:opacity var(--morph) var(--soft),background var(--morph) var(--soft);
   }
-  .fab.recording .inner{width:30px;height:30px;border-radius:9px}
-
-  .items{position:absolute;left:0;right:0;bottom:0;height:96px;display:flex;align-items:center}
-  .group{flex:1;display:flex;justify-content:space-evenly}
-  .gap{width:88px}
-  .item{border:0;background:none;cursor:pointer;display:flex;flex-direction:column;
-    align-items:center;gap:4px;color:var(--idle);font:500 10.5px/1 inherit;letter-spacing:.2px}
-  .item svg{width:23px;height:23px}
-  .item.selected{color:var(--accent);font-weight:700}
-  .item.flash-on{color:var(--amber);font-weight:700}
-
-  /* ---------- sheet de configurações ---------- */
-  .sheetbg{position:absolute;inset:0;background:rgba(0,0,0,.5);opacity:0;pointer-events:none;transition:opacity .25s}
-  .sheet{
-    position:absolute;left:0;right:0;bottom:0;height:470px;background:#0D1020;
-    border-radius:28px 28px 0 0;transform:translateY(102%);transition:transform .3s cubic-bezier(.22,1,.36,1);
-    padding:20px 16px;color:#E8ECFA;
+  .halo.rec{background:var(--ember);animation:breathe 1600ms ease-in-out infinite alternate}
+  @keyframes breathe{from{opacity:.2;transform:translateX(-50%) scale(.9)}to{opacity:.5;transform:translateX(-50%) scale(1.06)}}
+  .wave{
+    position:absolute;left:50%;top:36px;transform:translate(-50%,-50%);width:56px;height:56px;border-radius:50%;
+    border:3px solid var(--kiln);opacity:0;pointer-events:none;
   }
-  .open .sheetbg{opacity:1;pointer-events:auto}
-  .open .sheet{transform:translateY(0)}
-  .sheet h3{margin-bottom:14px}
-  .row{display:flex;justify-content:space-between;align-items:center;padding:14px 4px;
-    border-bottom:1px solid rgba(255,255,255,.08);font-size:14px}
-  .row:last-child{border:0}
-  .sw{width:44px;height:26px;border-radius:999px;background:rgba(255,255,255,.18);position:relative;cursor:pointer;transition:background .2s;border:0}
-  .sw::after{content:"";position:absolute;top:3px;left:3px;width:20px;height:20px;border-radius:50%;background:#8C93B5;transition:all .2s}
-  .sw.on{background:rgba(110,231,249,.25)}
-  .sw.on::after{left:21px;background:#6EE7F9}
+  .wave.go{animation:shock 620ms cubic-bezier(.22,1,.36,1) forwards}
+  @keyframes shock{0%{opacity:.6;width:56px;height:56px}100%{opacity:0;width:230px;height:230px}}
 
-  .hint{max-width:390px;color:#8C93B5;font-size:13px;text-align:center;line-height:1.6}
-  .hint b{color:#E8ECFA}
+  /* toast */
+  .toastzone{position:absolute;left:16px;right:16px;bottom:150px;display:flex;justify-content:center;z-index:6;pointer-events:none}
+  .toast{
+    pointer-events:auto;display:flex;align-items:center;gap:10px;
+    padding:10px 14px;border-radius:16px;color:var(--ink);font-size:14px;
+    background:linear-gradient(150deg,#FFFDFA,#F2EDE6 48%,#DCD3C8);
+    box-shadow:0 14px 34px rgba(0,0,0,.42);
+    transform:translateY(26px);opacity:0;transition:transform var(--morph) var(--soft),opacity var(--morph) var(--soft);
+    max-width:100%;
+  }
+  .toast.show{transform:translateY(0);opacity:1}
+  .toast button{border:0;background:none;color:var(--kiln-dark);font:inherit;font-weight:700;cursor:pointer;padding:6px 4px;min-height:40px}
+
+  /* telas internas */
+  .apppage{position:absolute;inset:0;background:var(--abyss);padding:18px 16px;opacity:0;pointer-events:none;
+    transition:opacity var(--morph) var(--soft);overflow:auto}
+  .apppage.on{opacity:1;pointer-events:auto}
+  .pagetitle{font-size:24px;letter-spacing:-.4px;font-weight:600}
+  .pagesub{font-size:11px;letter-spacing:.9px;text-transform:uppercase;color:var(--smoke);font-weight:600;margin-top:2px}
+  .card{padding:14px}
+  .setrow{display:flex;align-items:center;gap:12px;padding:10px 8px;border-bottom:1px solid var(--rim)}
+  .setrow:last-child{border-bottom:0}
+  .setrow .t{font-size:14px}
+  .setrow .s{font-size:11px;letter-spacing:.8px;color:var(--smoke);margin-top:2px}
+  .switch{
+    width:58px;height:34px;border-radius:999px;border:0;cursor:pointer;flex:none;position:relative;
+    background:linear-gradient(to bottom,rgba(0,0,0,.42),rgba(0,0,0,.12));
+    box-shadow:inset 0 2px 4px rgba(0,0,0,.55), inset 0 -1px 0 rgba(255,255,255,.22);
+    transition:background var(--quick) var(--soft);
+  }
+  .switch .puck{
+    position:absolute;top:4px;left:4px;width:26px;height:26px;border-radius:50%;
+    background:linear-gradient(150deg,#FFFDFA,#F2EDE6 48%,#DCD3C8);
+    box-shadow:0 4px 10px rgba(0,0,0,.4);
+    transition:transform var(--quick) var(--squish),background var(--quick) var(--soft);
+  }
+  .switch[aria-checked="true"] .puck{transform:translateX(24px);
+    background:linear-gradient(150deg,var(--kiln-light),var(--kiln) 46%,var(--kiln-dark))}
+  .switch:focus-visible{outline:2px solid var(--celadon);outline-offset:3px}
+  .grid3{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin-top:14px}
+  .tile{aspect-ratio:1;border-radius:14px;overflow:hidden;position:relative;cursor:pointer;
+    background:linear-gradient(140deg,#3C6B45,#8A6A44);border:1px solid var(--rim);
+    transition:transform var(--quick) var(--soft)}
+  .tile:nth-child(2n){background:linear-gradient(140deg,#6B4A33,#4F7A4A)}
+  .tile:nth-child(3n){background:linear-gradient(140deg,#2E4A57,#8A6A44)}
+  .tile.sel{box-shadow:0 0 0 2px var(--kiln),0 0 22px rgba(233,100,47,.5);transform:scale(.97)}
+  .tile .check{position:absolute;right:5px;top:5px;width:20px;height:20px;border-radius:50%;
+    background:linear-gradient(150deg,var(--kiln-light),var(--kiln-dark));display:none;place-items:center}
+  .tile.sel .check{display:grid}
+  .emptywrap{height:100%;display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;padding:24px;gap:14px}
+  .pill{
+    border:0;cursor:pointer;font:inherit;font-size:13px;font-weight:600;
+    padding:11px 20px;border-radius:999px;min-height:44px;color:#fff;
+    background:linear-gradient(150deg,var(--kiln-light),var(--kiln) 46%,var(--kiln-dark));
+    box-shadow:0 10px 26px rgba(233,100,47,.42);
+    transition:transform var(--fast) var(--soft)
+  }
+  .pill:active{transform:scale(.96)}
+  .pill.quiet{background:var(--clay-mid);color:var(--chalk);box-shadow:none;border:1px solid var(--rim)}
+  .pill:focus-visible{outline:2px solid var(--celadon);outline-offset:3px}
+
+  /* laboratório de matéria */
+  .lab{height:180px;border-radius:var(--r-card);overflow:hidden;position:relative;background:var(--clay-low)}
+  .lab canvas{width:100%;height:100%;display:block;touch-action:none}
+  .lab .hint{position:absolute;bottom:10px;left:0;right:0;text-align:center;font-size:11px;
+    letter-spacing:.9px;text-transform:uppercase;color:var(--smoke);pointer-events:none;
+    transition:opacity var(--morph) var(--soft)}
+  .lab.touched .hint{opacity:0}
+
+  /* navegação da vitrine */
+  .tabs{display:flex;gap:8px;margin-bottom:16px;flex-wrap:wrap}
+  .tab{border:1px solid var(--rim);background:transparent;color:var(--ash);font:inherit;font-size:12px;
+    font-weight:600;letter-spacing:.6px;text-transform:uppercase;padding:9px 14px;border-radius:999px;cursor:pointer;min-height:40px}
+  .tab[aria-selected="true"]{background:var(--chalk);color:var(--abyss);border-color:transparent}
+  .tab:focus-visible{outline:2px solid var(--celadon);outline-offset:3px}
+
+  footer{margin-top:40px;color:var(--smoke);font-size:13px;line-height:20px;max-width:78ch}
+  footer b{color:var(--chalk);font-weight:600}
+  code{font-family:ui-monospace,SFMono-Regular,Menlo,monospace;font-size:12px;color:var(--ash)}
+  @media (prefers-reduced-motion: reduce){
+    *{animation-duration:.001ms !important;transition-duration:.001ms !important}
+  }
 </style>
 </head>
 <body>
 <div class="wrap">
-  <div class="phone" id="phone">
-    <div class="viewfinder" id="vf">
-      <div class="vf-blur"></div>
-      <div class="flashfx" id="flashfx"></div>
+
+  <header>
+    <svg class="brandmark" viewBox="0 0 24 24" fill="none" stroke="#E9642F" stroke-width="1.7"
+         stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+      <path d="M12 3.2c5.4 0 8.8 3.8 8.8 8.8 0 5.6-4.3 8.8-9.4 8.8S3.2 17.9 3.2 12.4C3.2 7 7.4 3.2 12 3.2Z"/>
+      <path d="M7.8 10.1c2.8-2.2 6.8-.7 8 2.3"/>
+    </svg>
+    <div>
+      <h1>CLAY MORPHIST</h1>
+      <p class="sub">
+        A linguagem visual do Kame.io. Estado é <b>volume</b>, não cor: o modo ativo é onde a
+        massa escorreu, o botão pressionado afunda, a captura manda uma onda pela peça.
+      </p>
+    </div>
+    <span class="tag">Kame.io · design system</span>
+  </header>
+
+  <div class="rule"></div>
+
+  <div class="stage">
+    <!-- ══════════ coluna de painéis ══════════ -->
+    <div class="panels">
+
+      <section class="clay panel">
+        <h2>Matéria</h2>
+        <h3>Três materiais, uma só luz</h3>
+        <p class="note" style="margin-bottom:16px">
+          <b>Obsidian</b> é o corpo escuro do app. <b>Porcelain</b> é a argila clara dos controles.
+          <b>Glaze</b> é o esmalte queimado — reservado ao obturador, o único ponto quente da tela.
+          Nenhuma superfície usa canto circular: todas são superelipses, com alça de Bézier em 0.62
+          do raio, para a borda parecer tensionada.
+        </p>
+        <div class="row">
+          <button class="demo-btn" id="btn-motion" aria-pressed="false">Movimento reduzido: desligado</button>
+          <button class="demo-btn" id="btn-shake">Testar o peso do toque</button>
+        </div>
+      </section>
+
+      <section class="clay panel">
+        <h2>Paleta</h2>
+        <div class="swatches" id="swatches"></div>
+      </section>
+
+      <section class="clay panel">
+        <h2>Escala tipográfica</h2>
+        <div class="type-row"><span class="meta">34 / 40</span><span style="font-size:34px;line-height:40px;letter-spacing:-.7px;font-weight:700">Toda foto começa macia</span></div>
+        <div class="type-row"><span class="meta">24 / 30</span><span style="font-size:24px;line-height:30px;letter-spacing:-.4px;font-weight:600">Atlas</span></div>
+        <div class="type-row"><span class="meta">18 / 24</span><span style="font-size:18px;line-height:24px;letter-spacing:-.2px;font-weight:600">Ajustes</span></div>
+        <div class="type-row"><span class="meta">15 / 22</span><span style="font-size:15px;line-height:22px">Toque, segure, deforme.</span></div>
+        <div class="type-row"><span class="meta">13 / 16</span><span style="font-size:13px;line-height:16px;font-weight:600">Forma guardada no Atlas</span></div>
+        <div class="type-row"><span class="meta">11 / 14</span><span style="font-size:11px;line-height:14px;letter-spacing:.8px;font-weight:600;color:var(--smoke)">MANTER AS FORMAS</span></div>
+      </section>
+
+      <section class="clay panel">
+        <h2>Glifos — desenhados à mão, um por função</h2>
+        <p class="note" style="margin-bottom:14px">
+          Clique para redesenhá-los. Cada traço é depositado por <code>PathMetrics</code>, do
+          mesmo jeito que a matéria se reorganiza no app.
+        </p>
+        <div class="glyphs" id="glyphs"></div>
+      </section>
+
+      <section class="clay panel">
+        <h2>Laboratório</h2>
+        <h3>Empurre a massa</h3>
+        <p class="note" style="margin-bottom:14px">
+          Metabal resolvido por amostragem radial: 48 raios por bloco, bisseção de 6 passos, união
+          dos contornos. A luz segue o dedo — é isso que dá volume, não a geometria.
+        </p>
+        <div class="lab" id="lab"><canvas id="labcanvas"></canvas><div class="hint">arraste a massa</div></div>
+      </section>
+
     </div>
 
-    <div class="topbar">
-      <div class="thumb" id="thumb" title="Abrir galeria">🖼️</div>
-      <div class="spacer"></div>
-      <div class="rectimer" id="rectimer"><span class="recdot"></span><span id="rectime">00:00</span></div>
-      <span class="brand">Kame.io</span>
-    </div>
-
-    <div class="barzone">
-      <svg class="shape" viewBox="0 0 358 96" preserveAspectRatio="none" aria-hidden="true">
-        <path fill="#F4F5F7" d="M28 0 L127 0 A52 52 0 0 0 231 0 L330 0 A28 28 0 0 1 358 28 L358 68 A28 28 0 0 1 330 96 L28 96 A28 28 0 0 1 0 68 L0 28 A28 28 0 0 1 28 0 Z"/>
-      </svg>
-      <div class="glow"></div>
-
-      <div class="items">
-        <div class="group">
-          <button class="item selected" data-mode="foto" id="m-foto">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M3 8.5A2.5 2.5 0 0 1 5.5 6h1.7l1-1.6a1 1 0 0 1 .85-.4h5.9a1 1 0 0 1 .85.4l1 1.6h1.7A2.5 2.5 0 0 1 21 8.5v8A2.5 2.5 0 0 1 18.5 19h-13A2.5 2.5 0 0 1 3 16.5z"/><circle cx="12" cy="12.5" r="3.4"/></svg>
-            <span>Foto</span>
-          </button>
-          <button class="item" data-mode="video" id="m-video">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="6.5" width="12.5" height="11" rx="2.5"/><path d="m15.5 10.5 4.2-2.4a.8.8 0 0 1 1.2.7v6.4a.8.8 0 0 1-1.2.7l-4.2-2.4z"/></svg>
-            <span>Vídeo</span>
-          </button>
-        </div>
-        <div class="gap"></div>
-        <div class="group">
-          <button class="item" id="b-flip">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M4 9a8 8 0 0 1 14-2.5"/><path d="M18 3v4h-4"/><path d="M20 15a8 8 0 0 1-14 2.5"/><path d="M6 21v-4h4"/><rect x="9" y="10" width="6" height="5" rx="1.4"/></svg>
-            <span>Virar</span>
-          </button>
-          <button class="item" id="b-flash">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M13 2 5 13.5h5L10.5 22 19 10h-5.5z"/></svg>
-            <span>Flash</span>
-          </button>
-          <button class="item" id="b-config">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3.2"/><path d="M12 2.8v2.4M12 18.8v2.4M4.9 4.9l1.7 1.7M17.4 17.4l1.7 1.7M2.8 12h2.4M18.8 12h2.4M4.9 19.1l1.7-1.7M17.4 6.6l1.7-1.7"/></svg>
-            <span>Config.</span>
-          </button>
-        </div>
+    <!-- ══════════ coluna do telefone ══════════ -->
+    <div class="phone-col">
+      <div class="tabs" role="tablist" aria-label="Telas do app">
+        <button class="tab" role="tab" aria-selected="true" data-screen="studio">Estúdio</button>
+        <button class="tab" role="tab" aria-selected="false" data-screen="atlas">Atlas</button>
+        <button class="tab" role="tab" aria-selected="false" data-screen="settings">Ajustes</button>
+        <button class="tab" role="tab" aria-selected="false" data-screen="onboarding">Primeira vez</button>
       </div>
 
-      <button class="fab" id="fab" aria-label="Obturador"><span class="inner"></span></button>
-    </div>
+      <div class="phone" id="phone">
+        <div class="screen">
 
-    <div class="sheetbg" id="sheetbg"></div>
-    <div class="sheet">
-      <h3>Ajustes</h3>
-      <div class="row"><span>Grade 3x3</span><button class="sw on" data-sw></button></div>
-      <div class="row"><span>Som do obturador</span><button class="sw" data-sw></button></div>
-      <div class="row"><span>Salvar na galeria</span><button class="sw on" data-sw></button></div>
-      <div class="row"><span>Versão</span><span style="color:#8C93B5">1.0.0 (build 1)</span></div>
+          <!-- ---------- ESTÚDIO ---------- -->
+          <div class="apppage on" data-page="studio" style="padding:0">
+            <div class="viewfinder" id="vf"></div>
+            <div class="scrim"></div>
+            <div class="flashfx" id="flashfx"></div>
+
+            <div class="topbar">
+              <div class="thumb" id="thumb" role="button" tabindex="0" aria-label="Abrir o Atlas">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round">
+                  <rect x="4.2" y="15.6" width="15.4" height="3.8" rx="1.9"/>
+                  <rect x="4.2" y="10.1" width="11.2" height="3.8" rx="1.9"/>
+                  <rect x="4.2" y="4.6" width="13.2" height="3.8" rx="1.9"/>
+                </svg>
+                <span class="badge" id="count" hidden>0</span>
+              </div>
+              <div style="flex:1"></div>
+              <div class="recchip" id="recchip"><span class="recdot"></span><span id="rectime">00:00</span></div>
+              <span class="brandtag" id="brandtag">Kame.io</span>
+            </div>
+
+            <div class="toastzone">
+              <div class="toast" id="toast" role="status" aria-live="polite">
+                <svg id="toastglyph" viewBox="0 0 24 24" width="18" height="18" fill="none"
+                     stroke="#B8431A" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round">
+                  <path d="M5.2 12.6 9.6 17 18.8 7.2"/>
+                </svg>
+                <span id="toasttext">Forma guardada no Atlas.</span>
+                <button id="toastaction" hidden>Ver</button>
+              </div>
+            </div>
+
+            <div class="barzone">
+              <svg class="barmass" viewBox="0 0 362 114" preserveAspectRatio="none" aria-hidden="true">
+                <defs>
+                  <linearGradient id="porc" x1="0" y1="0" x2=".7" y2="1">
+                    <stop offset="0" stop-color="#FFFDFA"/><stop offset=".48" stop-color="#F2EDE6"/>
+                    <stop offset="1" stop-color="#DCD3C8"/>
+                  </linearGradient>
+                </defs>
+                <!-- cúpula: a massa cresce para receber o obturador -->
+                <path fill="url(#porc)" d="M30 36 H147 A36 36 0 0 1 215 36 H332
+                  A30 30 0 0 1 362 66 V84 A30 30 0 0 1 332 114 H30
+                  A30 30 0 0 1 0 84 V66 A30 30 0 0 1 30 36 Z"/>
+              </svg>
+
+              <div class="baritems">
+                <div class="vein" id="vein">
+                  <div class="groove"></div>
+                  <div class="blob" id="veinblob"></div>
+                  <div class="opts">
+                    <button class="opt" aria-selected="true" data-mode="0">
+                      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round">
+                        <circle cx="12" cy="12" r="8.6"/>
+                        <path d="M12 6.8 15.1 8.6 15.1 12.2 12 14 8.9 12.2 8.9 8.6Z"/>
+                      </svg><span>Foto</span>
+                    </button>
+                    <button class="opt" aria-selected="false" data-mode="1">
+                      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round">
+                        <rect x="3.4" y="6.6" width="12.2" height="10.8" rx="3.4"/>
+                        <path d="M10.1 9.7 14.6 12 10.1 14.3Z"/>
+                      </svg><span>Vídeo</span>
+                    </button>
+                  </div>
+                </div>
+                <div class="gap"></div>
+                <div class="actions">
+                  <button class="action" id="b-flip" aria-label="Trocar de câmera">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round">
+                      <path d="M12 3.4a8.6 8.6 0 0 1 7.6 4.6"/><path d="M20.2 3.1v5h-5"/>
+                      <path d="M12 20.6a8.6 8.6 0 0 1-7.6-4.6"/><path d="M3.8 20.9v-5h5"/>
+                      <rect x="7.7" y="8.7" width="8.6" height="6.6" rx="2.6"/>
+                    </svg><span>Virar</span>
+                  </button>
+                  <button class="action" id="b-flash" aria-pressed="false">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round">
+                      <path d="M13.8 2.9 6.4 12.9h4.4L9.9 21.1 17.6 9.5h-4.5z"/>
+                    </svg><span>Flash</span>
+                  </button>
+                  <button class="action" id="b-config" aria-label="Ajustes">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round">
+                      <path d="M12 20.6a8.4 8.4 0 1 1 8.3-9.6"/><circle cx="12" cy="12" r="5.2"/>
+                      <path d="M12 12 9.7 9.7"/>
+                    </svg><span>Ajustes</span>
+                  </button>
+                </div>
+              </div>
+
+              <div class="halo" id="halo"></div>
+              <button class="shutter" id="shutter" aria-label="Obturador, capturar"><span class="inner"></span></button>
+              <div class="wave" id="wave"></div>
+            </div>
+          </div>
+
+          <!-- ---------- ATLAS ---------- -->
+          <div class="apppage" data-page="atlas">
+            <div style="display:flex;align-items:center;gap:10px;margin-bottom:16px">
+              <button class="action" id="atlas-back" style="flex:none;width:48px;color:var(--ash)" aria-label="Voltar">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round">
+                  <path d="M14.6 5.6 8.2 12l6.4 6.4"/>
+                </svg>
+              </button>
+              <div>
+                <div class="pagetitle">Atlas</div>
+                <div class="pagesub" id="atlas-count">nenhuma forma ainda</div>
+              </div>
+              <div style="flex:1"></div>
+              <button class="action" id="atlas-add" style="flex:none;width:48px;color:var(--ash)" aria-label="Importar">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round">
+                  <path d="M12 5.6v12.8M5.6 12h12.8"/>
+                </svg>
+              </button>
+            </div>
+            <div id="atlas-empty">
+              <div class="emptywrap">
+                <div class="lab" id="lab2" style="width:200px;height:150px"><canvas id="labcanvas2"></canvas></div>
+                <div>
+                  <div style="font-size:18px;font-weight:600;letter-spacing:-.2px">Ainda não há nada moldado</div>
+                  <p class="note" style="margin-top:8px;max-width:32ch;display:inline-block">
+                    Cada captura vira uma peça aqui. Toque no obturador no Estúdio e a primeira
+                    forma aparece nesta prateleira.
+                  </p>
+                </div>
+                <button class="pill" id="empty-go">Ir para o Estúdio</button>
+              </div>
+            </div>
+            <div class="grid3" id="atlas-grid" hidden></div>
+          </div>
+
+          <!-- ---------- AJUSTES ---------- -->
+          <div class="apppage" data-page="settings">
+            <div style="display:flex;align-items:center;gap:10px;margin-bottom:18px">
+              <button class="action" id="set-back" style="flex:none;width:48px;color:var(--ash)" aria-label="Voltar">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round">
+                  <path d="M14.6 5.6 8.2 12l6.4 6.4"/>
+                </svg>
+              </button>
+              <div class="pagetitle">Ajustes</div>
+            </div>
+
+            <div class="pagesub" style="margin-bottom:8px">Matéria</div>
+            <div class="clay card">
+              <div class="setrow">
+                <svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="#E9642F" stroke-width="1.9" stroke-linecap="round"><circle cx="12" cy="12" r="5.2"/><path d="M12 12 9.7 9.7"/></svg>
+                <div style="flex:1"><div class="t">Movimento</div><div class="s">QUANTO A INTERFACE SE MOVE</div></div>
+                <div class="vein" style="width:150px;flex:none;height:44px">
+                  <div class="groove"></div><div class="blob" id="vein2" style="width:calc(33.333% - 6px)"></div>
+                  <div class="opts">
+                    <button class="opt" aria-selected="true" data-motion="0"><span>Sistema</span></button>
+                    <button class="opt" aria-selected="false" data-motion="1"><span>Completo</span></button>
+                    <button class="opt" aria-selected="false" data-motion="2"><span>Reduz.</span></button>
+                  </div>
+                </div>
+              </div>
+              <div class="setrow">
+                <svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="#E9642F" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M3.6 12 7.4 7.4 11 16.6 14.6 7.4 18.2 12h2.2"/></svg>
+                <div style="flex:1"><div class="t">Vibração</div><div class="s">RESPOSTA TÁTIL AO TOQUE</div></div>
+                <button class="switch" id="sw-haptics" aria-checked="true" aria-label="Vibração"><span class="puck"></span></button>
+              </div>
+              <div class="setrow">
+                <svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="#E9642F" stroke-width="2.1" stroke-linecap="round"><path d="M5.2 9.4v5.2M8.6 7.1v9.8M12 4.3v15.4M15.4 8.1v7.8M18.8 10.4v3.2"/></svg>
+                <div style="flex:1"><div class="t">Som do obturador</div><div class="s">CLIQUE AO CAPTURAR</div></div>
+                <button class="switch" id="sw-sound" aria-checked="false" aria-label="Som do obturador"><span class="puck"></span></button>
+              </div>
+            </div>
+
+            <div class="pagesub" style="margin:20px 0 8px">Captura</div>
+            <div class="clay card">
+              <div class="setrow">
+                <svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="#E9642F" stroke-width="1.5"><rect x="3.4" y="3.4" width="17.2" height="17.2" rx="3.2"/><path d="M9.1 3.4v17.2M14.9 3.4v17.2M3.4 9.1h17.2M3.4 14.9h17.2"/></svg>
+                <div style="flex:1"><div class="t">Grade 3×3</div><div class="s">GUIAS DE ENQUADRAMENTO</div></div>
+                <button class="switch" id="sw-grid" aria-checked="true" aria-label="Grade 3 por 3"><span class="puck"></span></button>
+              </div>
+              <div class="setrow">
+                <svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="#E9642F" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M12 4.8v8.6M9.3 10.5 12 13.4l2.7-2.9M5 13.6v4.2h14v-4.2"/></svg>
+                <div style="flex:1"><div class="t">Manter as formas</div><div class="s" id="persist-sub">FICAM NO APARELHO DEPOIS DE FECHAR</div></div>
+                <button class="switch" id="sw-persist" aria-checked="true" aria-label="Manter as formas"><span class="puck"></span></button>
+              </div>
+            </div>
+
+            <div class="pagesub" style="margin:20px 0 8px">Sobre</div>
+            <div class="clay card">
+              <div class="setrow">
+                <svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="#E9642F" stroke-width="1.7" stroke-linecap="round"><path d="M12 3.2c5.4 0 8.8 3.8 8.8 8.8 0 5.6-4.3 8.8-9.4 8.8S3.2 17.9 3.2 12.4C3.2 7 7.4 3.2 12 3.2Z"/><path d="M7.8 10.1c2.8-2.2 6.8-.7 8 2.3"/></svg>
+                <div style="flex:1"><div class="t">Kame.io</div><div class="s">VERSÃO 1.0.0 (BUILD 2)</div></div>
+              </div>
+              <div class="setrow">
+                <div style="flex:1"><div class="t">Design system</div><div class="s">CLAY MORPHIST — MATÉRIA, LUZ E MOVIMENTO</div></div>
+              </div>
+            </div>
+          </div>
+
+          <!-- ---------- PRIMEIRA VEZ ---------- -->
+          <div class="apppage" data-page="onboarding">
+            <div style="display:flex;flex-direction:column;height:100%;padding:24px 8px 28px">
+              <div class="lab" id="lab3" style="flex:1;min-height:0"><canvas id="labcanvas3"></canvas></div>
+              <div style="text-align:center;margin-top:24px">
+                <div style="font-size:34px;line-height:40px;letter-spacing:-.7px;font-weight:700">Toda foto começa macia.</div>
+                <p class="note" style="margin:8px auto 0;max-width:34ch">
+                  Toque, segure, deforme. O Kame.io responde com peso — cada captura vira uma
+                  forma guardada no seu Atlas.
+                </p>
+              </div>
+              <div style="margin-top:auto;padding-top:28px;display:flex;justify-content:center">
+                <button class="pill" id="onboard-cta">Dar forma</button>
+              </div>
+            </div>
+          </div>
+
+        </div>
+      </div>
     </div>
   </div>
 
-  <p class="hint">
-    Réplica 1:1 da <b>NotchedCameraBar</b> do Flutter: cartão branco com recorte
-    côncavo (<code>NotchedBarShape.getOuterPath</code>), obturador vermelho com
-    anel branco metade para fora e glow roxo/azul.
-    <b>Foto/Vídeo</b> trocam o modo (obturador vira “stop” e o timer aparece),
-    <b>Virar</b> espelha o viewfinder, <b>Flash</b> acende em âmbar,
-    <b>Config.</b> abre o sheet. É o efeito das suas referências.
-  </p>
+  <footer>
+    <b>Como ler esta vitrine.</b> O telefone à direita é uma réplica comportamental do app, não
+    uma imagem: o veio do modo <em>escorre</em> pelo sulco (340 ms, curva melt), o obturador
+    afunda e volta com sobrecurso, gravar encolhe a peça até virar “stop”, e a captura dispara uma
+    onda. A massa do laboratório é o mesmo algoritmo do <code>ClayField</code> em Dart:
+    48 raios por bloco, bisseção de 6 passos, união dos contornos — a luz segue o dedo.
+    Em <b>movimento reduzido</b> tudo continua funcionando e parando de se mexer.
+  </footer>
 </div>
 
 <script>
-  const $ = (s) => document.querySelector(s);
-  let mode = 'foto', recording = false, flashOn = false, secs = 0, timer = null;
+(() => {
+  'use strict';
+  const $ = (s, r = document) => r.querySelector(s);
+  const $$ = (s, r = document) => Array.from(r.querySelectorAll(s));
+  const reducedQuery = window.matchMedia('(prefers-reduced-motion: reduce)');
 
-  function fmt(s){ return String(Math.floor(s/60)).padStart(2,'0') + ':' + String(s%60).padStart(2,'0'); }
-
-  $('#m-foto').onclick = () => { mode='foto'; $('#m-foto').classList.add('selected'); $('#m-video').classList.remove('selected'); if (recording) stopRec(); };
-  $('#m-video').onclick = () => { mode='video'; $('#m-video').classList.add('selected'); $('#m-foto').classList.remove('selected'); };
-
-  function stopRec(){
-    recording = false; clearInterval(timer);
-    $('#fab').classList.remove('recording');
-    $('#rectimer').classList.remove('on');
-    $('#thumb').classList.add('has'); $('#thumb').textContent = '🎬';
-  }
-  $('#fab').onclick = () => {
-    if (mode === 'foto') {
-      const fx = $('#flashfx');
-      if (flashOn) { fx.classList.add('on'); setTimeout(() => fx.classList.remove('on'), 130); }
-      $('#thumb').classList.add('has'); $('#thumb').textContent = '🌿';
-    } else if (!recording) {
-      recording = true; secs = 0; $('#rectime').textContent = fmt(0);
-      $('#fab').classList.add('recording');
-      $('#rectimer').classList.add('on');
-      timer = setInterval(() => { secs++; $('#rectime').textContent = fmt(secs); }, 1000);
-    } else stopRec();
+  /* ─────────────────────────────────────────────────────────────────────────
+     Estado compartilhado da vitrine
+     ───────────────────────────────────────────────────────────────────────── */
+  const state = {
+    mode: 0,            // 0 foto · 1 vídeo
+    recording: false,
+    seconds: 0,
+    timer: null,
+    flash: 0,           // 0 off · 1 auto · 2 torch
+    count: 0,
+    motion: 0,          // 0 sistema · 1 completo · 2 reduzido
+    reduced: reducedQuery.matches,
+    grid: true,
+    haptics: true,
+    sound: false,
+    persist: true,
   };
 
-  $('#b-flip').onclick = () => $('#vf').classList.toggle('flipped');
-  $('#b-flash').onclick = () => { flashOn = !flashOn; $('#b-flash').classList.toggle('flash-on', flashOn); };
-  $('#b-config').onclick = () => $('#phone').classList.add('open');
-  $('#sheetbg').onclick = () => $('#phone').classList.remove('open');
-  document.querySelectorAll('[data-sw]').forEach(b => b.onclick = () => b.classList.toggle('on'));
+  const isReduced = () => state.motion === 2 || (state.motion === 0 && state.reduced);
+
+  /* ── paleta ───────────────────────────────────────────────────────────── */
+  const palette = [
+    ['Abyss', '#08090D', 'corpo'], ['Bedrock', '#101219', 'agrupamento'],
+    ['Clay mid', '#1E222E', 'card'], ['Chalk', '#F4F1EC', 'texto 16:1'],
+    ['Ash', '#A7A29B', 'texto 7:1'], ['Smoke', '#8A867F', 'texto 5:1'],
+    ['Porcelain', '#F2EDE6', 'controles'], ['Ink', '#2A2521', 'tinta 12:1'],
+    ['Kiln', '#E9642F', 'esmalte'], ['Ember', '#FF4D6D', 'gravar'],
+    ['Celadon', '#4FD1B0', 'foco'], ['Ochre', '#E9B44C', 'flash'],
+  ];
+  $('#swatches').innerHTML = palette.map(([name, hex, role]) => `
+    <div class="sw">
+      <div class="chip" style="background:${hex}"></div>
+      <b>${name}</b><span>${hex.toUpperCase()} · ${role}</span>
+    </div>`).join('');
+
+  /* ── glifos (mesmos traços do app) ────────────────────────────────────── */
+  const G = {
+    'Abertura · foto': '<circle cx="12" cy="12" r="8.6"/><path d="M12 6.8 15.1 8.6v3.6L12 14l-3.1-1.8V8.6z"/>',
+    'Carretel · vídeo': '<rect x="3.4" y="6.6" width="12.2" height="10.8" rx="3.4"/><path d="M10.1 9.7 14.6 12l-4.5 2.3z"/>',
+    'Virar lente': '<path d="M12 3.4a8.6 8.6 0 0 1 7.6 4.6"/><path d="M20.2 3.1v5h-5"/><path d="M12 20.6a8.6 8.6 0 0 1-7.6-4.6"/><path d="M3.8 20.9v-5h5"/><rect x="7.7" y="8.7" width="8.6" height="6.6" rx="2.6"/>',
+    'Centelha · flash': '<path d="M13.8 2.9 6.4 12.9h4.4L9.9 21.1 17.6 9.5h-4.5z"/>',
+    'Mostrador · ajustes': '<path d="M12 20.6a8.4 8.4 0 1 1 8.3-9.6"/><circle cx="12" cy="12" r="5.2"/><path d="M12 12 9.7 9.7"/>',
+    'Grade 3×3': '<rect x="3.4" y="3.4" width="17.2" height="17.2" rx="3.2"/><path d="M9.1 3.4v17.2M14.9 3.4v17.2M3.4 9.1h17.2M3.4 14.9h17.2"/>',
+    'Pilha · atlas': '<rect x="4.2" y="15.6" width="15.4" height="3.8" rx="1.9"/><rect x="4.2" y="10.1" width="11.2" height="3.8" rx="1.9"/><rect x="4.2" y="4.6" width="13.2" height="3.8" rx="1.9"/>',
+    'Onda · som': '<path d="M5.2 9.4v5.2M8.6 7.1v9.8M12 4.3v15.4M15.4 8.1v7.8M18.8 10.4v3.2"/>',
+    'Bandeja · guardar': '<path d="M12 4.8v8.6M9.3 10.5 12 13.4l2.7-2.9M5 13.6v4.2h14v-4.2"/>',
+    'Timer': '<circle cx="12" cy="12" r="8.5"/><path d="M12 12V6.9M12 12l4.2 1.4"/>',
+    'Fechar': '<path d="M7 7l10 10M17 7 7 17"/>',
+    'Voltar': '<path d="M14.6 5.6 8.2 12l6.4 6.4"/>',
+    'Câmera off': '<rect x="3.2" y="7.2" width="13.4" height="9.6" rx="3.2"/><circle cx="9.9" cy="12" r="2.9"/><path d="M13.6 7.2 15 5.8h2.4v1.4M4.6 19.4 19.4 4.6"/>',
+    'Confirmar': '<path d="M5.2 12.6 9.6 17 18.8 7.2"/>',
+    'Compartilhar': '<path d="M12 3.8v9.4M8.9 6.9 12 3.8l3.1 3.1M5.6 11.4v6.4h12.8v-6.4"/>',
+    'Excluir': '<path d="M4.8 8h14.4M9.6 8V5.4h4.8V8M6.8 8l1.1 11.4h8.2L17.2 8"/>',
+    'Adicionar': '<path d="M12 5.6v12.8M5.6 12h12.8"/>',
+    'Tentar de novo': '<path d="M12 4.4a8.4 8.4 0 1 1-8.3 9.6"/><path d="M3.4 11.6v5.2h5.2"/>',
+    'Pulso · vibração': '<path d="M3.6 12 7.4 7.4 11 16.6l3.6-9.2 3.6 4.6h2.2"/>',
+    'Velocidade': '<path d="M4.2 7.6h15.6M6.3 12h11.4M8.4 16.4h7.2"/>',
+    'Marca': '<path d="M12 3.2c5.4 0 8.8 3.8 8.8 8.8 0 5.6-4.3 8.8-9.4 8.8S3.2 17.9 3.2 12.4C3.2 7 7.4 3.2 12 3.2Z"/><path d="M7.8 10.1c2.8-2.2 6.8-.7 8 2.3"/>',
+  };
+  $('#glyphs').innerHTML = Object.entries(G).map(([name, d]) => `
+    <button class="glyph" title="${name}">
+      <svg viewBox="0 0 24 24" fill="none" stroke="#F4F1EC" stroke-width="1.9"
+           stroke-linecap="round" stroke-linejoin="round">${d}</svg>
+      <span>${name}</span>
+    </button>`).join('');
+
+  // Redesenha os glifos ao clicar (mesma ideia do ClayGlyphSwap no app).
+  $$('.glyph').forEach((btn) => {
+    btn.addEventListener('click', () => {
+      const shapes = $$('svg *', btn);
+      shapes.forEach((el) => {
+        const len = el.getTotalLength ? el.getTotalLength() : 200;
+        el.style.setProperty('--len', len);
+        el.style.animation = 'none';
+        void el.getBoundingClientRect();
+        el.style.animation = '';
+      });
+    });
+  });
+
+  /* ─────────────────────────────────────────────────────────────────────────
+     ClayField — metaballs por amostragem radial (mesmo algoritmo do Dart)
+     ───────────────────────────────────────────────────────────────────────── */
+  const COMPOSITION = [
+    [0.34, 0.44, 0.30, 0.00],
+    [0.66, 0.37, 0.26, 0.18],
+    [0.52, 0.66, 0.28, 0.42],
+    [0.25, 0.68, 0.19, 0.66],
+    [0.76, 0.66, 0.18, 0.84],
+  ];
+
+  function makeField(canvas, { tone = [233, 100, 47], quality = 48, interactive = true, drift = true } = {}) {
+    const ctx = canvas.getContext('2d');
+    let w = 0, h = 0, dpr = 1;
+    let pointer = null, grab = 0, touched = false, t0 = performance.now();
+
+    function resize() {
+      const rect = canvas.getBoundingClientRect();
+      dpr = Math.min(window.devicePixelRatio || 1, 2);
+      w = Math.max(1, rect.width); h = Math.max(1, rect.height);
+      canvas.width = Math.round(w * dpr); canvas.height = Math.round(h * dpr);
+      ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+    }
+
+    function samples(time) {
+      const min = Math.min(w, h);
+      const t = ((time - t0) / 9000) % 1;
+      const out = COMPOSITION.map(([x, y, r, phase]) => {
+        let cx = x * w + Math.sin(2 * Math.PI * (t + phase)) * 0.022 * w;
+        let cy = y * h + Math.cos(2 * Math.PI * (t + phase * 1.7)) * 0.026 * h;
+        const radius = r * min;
+        if (pointer && grab > 0) {
+          const dx = pointer.x - cx, dy = pointer.y - cy;
+          const dist = Math.hypot(dx, dy), reach = radius * 3.4;
+          if (dist < reach && dist > 0.001) {
+            const f = 1 - dist / reach;
+            cx += (dx / dist) * radius * 0.55 * f * f * grab;
+            cy += (dy / dist) * radius * 0.55 * f * f * grab;
+          }
+        }
+        return { cx, cy, radius };
+      });
+      if (pointer && grab > 0.01) out.push({ cx: pointer.x, cy: pointer.y, radius: 0.2 * min * grab });
+      return out;
+    }
+
+    const fieldAt = (list, x, y) => {
+      let s = 0;
+      for (const b of list) {
+        const dx = x - b.cx, dy = y - b.cy;
+        const d2 = dx * dx + dy * dy;
+        if (d2 < 0.0001) return 10;
+        s += (b.radius * b.radius) / d2;
+      }
+      return s;
+    };
+
+    function contour(list) {
+      const path = new Path2D();
+      const maxR = Math.max(w, h);
+      for (const b of list) {
+        const pts = [];
+        const step = Math.min(40, Math.max(2, b.radius * 0.42));
+        for (let i = 0; i < quality; i++) {
+          const a = (i / quality) * Math.PI * 2;
+          const dx = Math.cos(a), dy = Math.sin(a);
+          let lo = b.radius * 0.5, hi = lo, guard = 0;
+          while (hi < maxR && fieldAt(list, b.cx + dx * hi, b.cy + dy * hi) > 1) {
+            lo = hi; hi += step; if (++guard > 72) break;
+          }
+          for (let k = 0; k < 6; k++) {
+            const mid = (lo + hi) * 0.5;
+            if (fieldAt(list, b.cx + dx * mid, b.cy + dy * mid) > 1) lo = mid; else hi = mid;
+          }
+          pts.push([b.cx + dx * lo, b.cy + dy * lo]);
+        }
+        // Quadrática nos pontos médios: fecha a facetagem sem oscilar.
+        const mid = (p, q) => [(p[0] + q[0]) / 2, (p[1] + q[1]) / 2];
+        const start = mid(pts[pts.length - 1], pts[0]);
+        path.moveTo(start[0], start[1]);
+        for (let i = 0; i < pts.length; i++) {
+          const m = mid(pts[i], pts[(i + 1) % pts.length]);
+          path.quadraticCurveTo(pts[i][0], pts[i][1], m[0], m[1]);
+        }
+        path.closePath();
+      }
+      return path;
+    }
+
+    function draw(time) {
+      if (!w || !h) return;
+      ctx.clearRect(0, 0, w, h);
+      const list = samples(time);
+      const path = contour(list);
+
+      const light = pointer
+        ? { x: (pointer.x / w) * 2 - 1, y: (pointer.y / h) * 2 - 1 }
+        : { x: -0.6, y: -0.75 };
+      const lx = Math.max(-1, Math.min(1, light.x)), ly = Math.max(-1, Math.min(1, light.y));
+      const [tr, tg, tb] = tone;
+      const mix = (k) => {
+        // mesmo raciocínio do HSL do Flutter: claro em direção à luz, escuro no oposto
+        const f = (c) => Math.round(c * k + 255 * (1 - k) * 0.10);
+        return `rgb(${f(tr)},${f(tg)},${f(tb)})`;
+      };
+
+      // 1. sombra de contato
+      ctx.save();
+      ctx.translate(0, 9);
+      ctx.fillStyle = 'rgba(0,0,0,.38)';
+      ctx.filter = 'blur(12px)';
+      ctx.fill(path);
+      ctx.restore();
+
+      // 2. corpo iluminado
+      const g = ctx.createLinearGradient(
+        w * (0.5 + 0.5 * lx), h * (0.5 + 0.5 * ly),
+        w * (0.5 - 0.5 * lx), h * (0.5 - 0.5 * ly),
+      );
+      g.addColorStop(0, mix(1.32)); g.addColorStop(0.46, mix(0.92)); g.addColorStop(1, mix(0.52));
+      ctx.fillStyle = g;
+      ctx.fill(path);
+
+      // 3. luz interna, especular e rim — tudo preso dentro da massa
+      ctx.save();
+      ctx.clip(path);
+
+      const sx = w * (0.5 + 0.26 * lx), sy = h * (0.5 + 0.28 * ly);
+      const sr = Math.min(w, h) * 0.42;
+      const spec = ctx.createRadialGradient(sx, sy, 0, sx, sy, sr);
+      spec.addColorStop(0, 'rgba(255,255,255,.42)'); spec.addColorStop(1, 'rgba(255,255,255,0)');
+      ctx.fillStyle = spec;
+      ctx.beginPath(); ctx.arc(sx, sy, sr, 0, Math.PI * 2); ctx.fill();
+
+      const term = ctx.createLinearGradient(
+        w * (0.5 + 0.5 * lx), h * (0.5 + 0.5 * ly),
+        w * (0.5 - 0.5 * lx), h * (0.5 - 0.5 * ly),
+      );
+      term.addColorStop(0, 'rgba(0,0,0,0)'); term.addColorStop(1, 'rgba(0,0,0,.5)');
+      ctx.strokeStyle = term; ctx.lineWidth = Math.min(w, h) * 0.22;
+      ctx.filter = 'blur(14px)';
+      ctx.stroke(path);
+
+      ctx.filter = 'none';
+      const rim = ctx.createLinearGradient(
+        w * (0.5 + 0.5 * lx), h * (0.5 + 0.5 * ly),
+        w * (0.5 - 0.5 * lx), h * (0.5 - 0.5 * ly),
+      );
+      rim.addColorStop(0, 'rgba(255,255,255,.5)'); rim.addColorStop(1, 'rgba(255,255,255,0)');
+      ctx.strokeStyle = rim; ctx.lineWidth = 1.8;
+      ctx.stroke(path);
+      ctx.restore();
+
+      requestAnimationFrame(draw);
+    }
+
+    function local(e) {
+      const rect = canvas.getBoundingClientRect();
+      const p = e.touches ? e.touches[0] : e;
+      return { x: p.clientX - rect.left, y: p.clientY - rect.top };
+    }
+
+    if (interactive) {
+      const down = (e) => {
+        pointer = local(e); grab = 1; touched = true;
+        canvas.parentElement.classList.add('touched');
+        e.preventDefault();
+      };
+      const move = (e) => { if (pointer) pointer = local(e); };
+      const up = () => { pointer = null; grab = 0; };
+      canvas.addEventListener('mousedown', down);
+      window.addEventListener('mousemove', (e) => { if (pointer) move(e); });
+      window.addEventListener('mouseup', up);
+      canvas.addEventListener('touchstart', down, { passive: false });
+      canvas.addEventListener('touchmove', (e) => { move(e); e.preventDefault(); }, { passive: false });
+      canvas.addEventListener('touchend', up);
+    }
+
+    resize();
+    window.addEventListener('resize', resize);
+    if (drift) requestAnimationFrame(draw); else draw(performance.now());
+
+    return { resize };
+  }
+
+  const fields = [
+    makeField($('#labcanvas')),
+    makeField($('#labcanvas2'), { quality: 36 }),
+    makeField($('#labcanvas3'), { quality: 44 }),
+  ];
+
+  /* ─────────────────────────────────────────────────────────────────────────
+     Navegação da vitrine
+     ───────────────────────────────────────────────────────────────────────── */
+  function showScreen(name) {
+    $$('.tab').forEach((t) => t.setAttribute('aria-selected', String(t.dataset.screen === name)));
+    $$('.apppage').forEach((p) => p.classList.toggle('on', p.dataset.page === name));
+    if (name === 'atlas' || name === 'onboarding' || name === 'settings') {
+      requestAnimationFrame(() => fields.forEach((f) => f.resize()));
+    }
+  }
+  $$('.tab').forEach((tab) => tab.addEventListener('click', () => showScreen(tab.dataset.screen)));
+
+  /* ─────────────────────────────────────────────────────────────────────────
+     Estúdio
+     ───────────────────────────────────────────────────────────────────────── */
+  const shutter = $('#shutter'), wave = $('#wave'), halo = $('#halo');
+  const recchip = $('#recchip'), rectime = $('#rectime'), brandtag = $('#brandtag');
+  const toast = $('#toast'), toastText = $('#toasttext'), toastAction = $('#toastaction');
+  let toastTimer = null;
+
+  const fmt = (s) => `${String(Math.floor(s / 60)).padStart(2, '0')}:${String(s % 60).padStart(2, '0')}`;
+
+  function notify(message, { action } = {}) {
+    toastText.textContent = message;
+    toastAction.hidden = !action;
+    if (action) { toastAction.onclick = action; }
+    toast.classList.add('show');
+    clearTimeout(toastTimer);
+    toastTimer = setTimeout(() => toast.classList.remove('show'), 2800);
+  }
+
+  function setMode(index) {
+    state.mode = index;
+    $$('#vein .opt').forEach((b) => b.setAttribute('aria-selected', String(Number(b.dataset.mode) === index)));
+    $('#veinblob').style.transform = `translateX(${index * 100}%)`;
+    if (index === 0 && state.recording) stopRecording();
+  }
+  $$('#vein .opt').forEach((b) => b.addEventListener('click', () => setMode(Number(b.dataset.mode))));
+
+  function shoot() {
+    if (state.mode === 1) { state.recording ? stopRecording() : startRecording(); return; }
+    // captura
+    wave.classList.remove('go'); void wave.offsetWidth; wave.classList.add('go');
+    if (state.flash > 0) {
+      const fx = $('#flashfx'); fx.classList.add('on');
+      setTimeout(() => fx.classList.remove('on'), 130);
+    }
+    state.count += 1;
+    paintThumb();
+    notify('Forma guardada no Atlas.', { action: () => showScreen('atlas') });
+  }
+
+  function startRecording() {
+    state.recording = true; state.seconds = 0;
+    shutter.classList.add('rec'); halo.classList.add('rec');
+    recchip.classList.add('on'); brandtag.style.display = 'none';
+    rectime.textContent = fmt(0);
+    state.timer = setInterval(() => { state.seconds += 1; rectime.textContent = fmt(state.seconds); }, 1000);
+    shutter.setAttribute('aria-label', 'Parar gravação');
+  }
+
+  function stopRecording() {
+    state.recording = false;
+    clearInterval(state.timer);
+    shutter.classList.remove('rec'); halo.classList.remove('rec');
+    recchip.classList.remove('on'); brandtag.style.display = '';
+    shutter.setAttribute('aria-label', 'Obturador, capturar');
+    state.count += 1; paintThumb();
+    notify('Gravação guardada no Atlas.', { action: () => showScreen('atlas') });
+  }
+
+  shutter.addEventListener('click', shoot);
+
+  function paintThumb() {
+    const badge = $('#count');
+    badge.hidden = state.count === 0;
+    badge.textContent = state.count > 99 ? '99+' : String(state.count);
+    const thumb = $('#thumb');
+    thumb.innerHTML = `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9"
+      stroke-linecap="round"><rect x="4.2" y="15.6" width="15.4" height="3.8" rx="1.9"/>
+      <rect x="4.2" y="10.1" width="11.2" height="3.8" rx="1.9"/>
+      <rect x="4.2" y="4.6" width="13.2" height="3.8" rx="1.9"/></svg>
+      <span class="badge" id="count" ${state.count ? '' : 'hidden'}>${state.count}</span>`;
+  }
+
+  $('#thumb').addEventListener('click', () => showScreen('atlas'));
+  $('#thumb').addEventListener('keydown', (e) => {
+    if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); showScreen('atlas'); }
+  });
+
+  $('#b-flip').addEventListener('click', () => $('#vf').classList.toggle('flip'));
+
+  $('#b-flash').addEventListener('click', (e) => {
+    state.flash = (state.flash + 1) % 3;
+    const btn = e.currentTarget;
+    const on = state.flash > 0;
+    btn.setAttribute('aria-pressed', String(on));
+    btn.querySelector('span').textContent = ['Flash', 'Auto', 'Lanterna'][state.flash];
+  });
+
+  $('#b-config').addEventListener('click', () => showScreen('settings'));
+
+  /* ─────────────────────────────────────────────────────────────────────────
+     Atlas
+     ───────────────────────────────────────────────────────────────────────── */
+  function paintAtlas() {
+    const grid = $('#atlas-grid'), empty = $('#atlas-empty');
+    const n = state.count;
+    $('#atlas-count').textContent = n === 0 ? 'nenhuma forma ainda' : n === 1 ? '1 forma guardada' : `${n} formas guardadas`;
+    if (n === 0) { grid.hidden = true; empty.hidden = false; return; }
+    empty.hidden = true; grid.hidden = false;
+    grid.innerHTML = Array.from({ length: n }, (_, i) => `
+      <div class="tile" data-index="${i}" role="button" tabindex="0" aria-label="Forma ${i + 1}">
+        <span class="check"><svg viewBox="0 0 24 24" width="12" height="12" fill="none" stroke="#fff"
+          stroke-width="3" stroke-linecap="round"><path d="M5.2 12.6 9.6 17 18.8 7.2"/></svg></span>
+      </div>`).join('');
+    $$('.tile', grid).forEach((tile) => {
+      tile.addEventListener('click', () => tile.classList.toggle('sel'));
+      tile.addEventListener('keydown', (e) => {
+        if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); tile.classList.toggle('sel'); }
+      });
+    });
+  }
+  $('#atlas-add').addEventListener('click', () => {
+    state.count += 1; paintAtlas(); paintThumb();
+    notify('Importadas do aparelho.');
+  });
+  $('#atlas-back').addEventListener('click', () => showScreen('studio'));
+  $('#empty-go').addEventListener('click', () => showScreen('studio'));
+
+  /* ─────────────────────────────────────────────────────────────────────────
+     Ajustes
+     ───────────────────────────────────────────────────────────────────────── */
+  function bindSwitch(id, key, onChange) {
+    const el = $(id);
+    el.addEventListener('click', () => {
+      state[key] = !state[key];
+      el.setAttribute('aria-checked', String(state[key]));
+      onChange && onChange(state[key]);
+    });
+  }
+  bindSwitch('#sw-haptics', 'haptics');
+  bindSwitch('#sw-sound', 'sound');
+  bindSwitch('#sw-grid', 'grid');
+  bindSwitch('#sw-persist', 'persist', (v) => {
+    $('#persist-sub').textContent = v
+      ? 'FICAM NO APARELHO DEPOIS DE FECHAR'
+      : 'VALEM SÓ PARA ESTA SESSÃO';
+  });
+  $('#set-back').addEventListener('click', () => showScreen('settings') && showScreen('studio'));
+
+  $$('[data-motion]').forEach((b) => {
+    b.addEventListener('click', () => {
+      state.motion = Number(b.dataset.motion);
+      $$('[data-motion]').forEach((x) => x.setAttribute('aria-selected', String(x === b)));
+      $('#vein2').style.transform = `translateX(${state.motion * 100}%)`;
+      applyMotion();
+    });
+  });
+
+  const motionBtn = $('#btn-motion');
+  motionBtn.addEventListener('click', () => {
+    state.motion = state.motion === 2 ? 1 : 2;
+    motionBtn.setAttribute('aria-pressed', String(state.motion === 2));
+    motionBtn.textContent = `Movimento reduzido: ${state.motion === 2 ? 'ligado' : 'desligado'}`;
+    $$('[data-motion]').forEach((x) => x.setAttribute('aria-selected', String(Number(x.dataset.motion) === state.motion)));
+    $('#vein2').style.transform = `translateX(${state.motion * 100}%)`;
+    applyMotion();
+  });
+
+  function applyMotion() {
+    const r = isReduced();
+    document.documentElement.style.setProperty('--morph', r ? '60ms' : '340ms');
+    document.documentElement.style.setProperty('--sculpt', r ? '80ms' : '620ms');
+    document.documentElement.style.setProperty('--quick', r ? '70ms' : '180ms');
+    halo.style.animation = r ? 'none' : '';
+  }
+
+  $('#btn-shake').addEventListener('click', () => {
+    const el = $('#btn-shake');
+    el.style.transform = 'scale(.94)';
+    setTimeout(() => { el.style.transform = ''; }, 90);
+    notify('Toque com peso: 90 ms para afundar, 340 ms para voltar com sobrecurso.');
+  });
+
+  $('#onboard-cta').addEventListener('click', () => {
+    notify('Câmera liberada. A matéria começa a esquentar.');
+    setTimeout(() => showScreen('studio'), 700);
+  });
+
+  reducedQuery.addEventListener('change', (e) => { state.reduced = e.matches; applyMotion(); });
+
+  paintThumb(); paintAtlas(); applyMotion();
+})();
 </script>
 </body>
 </html>

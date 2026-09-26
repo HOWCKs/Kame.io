@@ -185,8 +185,8 @@ class ClayGroovePainter extends CustomPainter {
   }
 
   @override
-  bool shouldRepaint(covariant ClayGroovePainter old) =>
-      old.radius != radius || old.depth != depth;
+  bool shouldRepaint(covariant ClayGroovePainter oldDelegate) =>
+      oldDelegate.radius != radius || oldDelegate.depth != depth;
 }
 
 /// O **veio**: o seletor de modo.
@@ -600,7 +600,7 @@ class _WavePainter extends CustomPainter {
 
   @override
   bool shouldRepaint(covariant _WavePainter old) =>
-      old.progress != progress || old.radius != radius || old.color != color;
+      oldDelegate.progress != progress || oldDelegate.radius != radius || oldDelegate.color != color;
 }
 
 class _HaloPainter extends CustomPainter {
@@ -628,7 +628,7 @@ class _HaloPainter extends CustomPainter {
 
   @override
   bool shouldRepaint(covariant _HaloPainter old) =>
-      old.radius != radius || old.opacity != opacity || old.color != color;
+      oldDelegate.radius != radius || oldDelegate.opacity != opacity || oldDelegate.color != color;
 }
 
 /// Etiqueta de estado (timer de gravação, contadores, selos).

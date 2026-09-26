@@ -25,7 +25,7 @@ class ClayBooting extends StatelessWidget {
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: <Widget>[
-            SizedBox(
+            const SizedBox(
               height: 132,
               child: ClayField(
                 drift: true,
@@ -319,6 +319,7 @@ class _ClayFocusRingState extends State<ClayFocusRing>
 /// Confirmação de ação destrutiva: sempre com consequência escrita.
 class ClayConfirmDialog extends StatelessWidget {
   const ClayConfirmDialog({
+    super.key,
     required this.title,
     required this.message,
     required this.confirmLabel,

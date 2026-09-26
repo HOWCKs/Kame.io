@@ -446,5 +446,5 @@ class ClayFieldPainter extends CustomPainter {
   }
 
   @override
-  bool shouldRepaint(covariant ClayFieldPainter old) => true;
+  bool shouldRepaint(covariant ClayFieldPainter oldDelegate) => true;
 }

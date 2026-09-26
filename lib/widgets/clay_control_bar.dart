@@ -64,7 +64,7 @@ class ClayControlBar extends StatelessWidget {
         children: <Widget>[
           // Massa da barra (cúpula incluída).
           Positioned.fill(
-            child: CustomPaint(
+            child: const CustomPaint(
               painter: ClayBarPainter(
                 cornerRadius: cornerRadius,
                 domeRadius: domeRadius,
@@ -302,9 +302,9 @@ class ClayBarPainter extends CustomPainter {
   }
 
   @override
-  bool shouldRepaint(covariant ClayBarPainter old) =>
-      old.cornerRadius != cornerRadius ||
-      old.domeRadius != domeRadius ||
-      old.top != top ||
-      old.height != height;
+  bool shouldRepaint(covariant ClayBarPainter oldDelegate) =>
+      oldDelegate.cornerRadius != cornerRadius ||
+      oldDelegate.domeRadius != domeRadius ||
+      oldDelegate.top != top ||
+      oldDelegate.height != height;
 }

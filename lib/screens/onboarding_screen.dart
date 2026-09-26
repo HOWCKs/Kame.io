@@ -85,7 +85,7 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
                 children: <Widget>[
                   // A massa é a explicação: quem nunca leu uma linha sobre o
                   // app já entendeu do que ele se trata depois de empurrá-la.
-                  Expanded(
+                  const Expanded(
                     child: ClayField(
                       hint: 'empurre a massa',
                       quality: 44,

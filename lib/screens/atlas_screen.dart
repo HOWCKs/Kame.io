@@ -269,7 +269,7 @@ class _AtlasScreenState extends State<AtlasScreen> {
         title: 'Ainda não há nada moldado',
         message:
             'Cada captura vira uma peça aqui. Toque no obturador no Estúdio e a primeira forma aparece nesta prateleira.',
-        hero: SizedBox(
+        hero: const SizedBox(
           height: 190,
           child: ClayField(
             hint: 'arraste a massa',
@@ -476,13 +476,13 @@ class _MorphSheet extends StatelessWidget {
         children: <Widget>[
           const SizedBox(height: ClaySpace.sm),
           // Alça: a mesma massa dos controles.
-          ClaySurface(
+          const ClaySurface(
             pressable: false,
             width: 46,
             height: 6,
             radius: 3,
             padding: EdgeInsets.zero,
-            child: const SizedBox.shrink(),
+            child: SizedBox.shrink(),
           ),
           const SizedBox(height: ClaySpace.sm),
           Flexible(
